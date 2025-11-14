@@ -139,9 +139,35 @@ docker-compose down
 
 Once the bot is running, test it in your Discord server:
 
-1. Type a message like: "I want a t-shirt that says 'Code is Life'"
+1. **Create a design**: Type "I want a t-shirt that says 'Code is Life'"
 2. The bot should respond with a link to your custom t-shirt
-3. Check the logs for any errors
+3. **View your history**: Type `!mydesigns` to see all your past designs
+4. Check the logs for any errors
+
+## Bot Commands
+
+The bot responds to the following commands:
+
+### `!mydesigns`
+View all t-shirt designs you've created.
+
+**Example:**
+```
+User: !mydesigns
+Bot: Your Design History (2 designs):
+     1. Code is Life - Custom Tee
+        🔗 View: https://www.printful.com/dashboard/store/products/12345
+     2. Hello World - Custom Tee
+        🔗 View: https://www.printful.com/dashboard/store/products/12346
+```
+
+### Natural Language Requests
+Simply mention a t-shirt in your message with trigger keywords:
+- "I want a t-shirt that says..."
+- "Make me a shirt with..."
+- "Can I get merch that says..."
+
+See **[Design Tracking Guide](DESIGN_TRACKING.md)** for more information about viewing and managing your designs.
 
 ## Troubleshooting
 

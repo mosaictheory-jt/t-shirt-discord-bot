@@ -58,6 +58,59 @@ class TShirtOrchestrator:
         await self.printful_client.cleanup()
         logger.info("Orchestrator cleaned up")
 
+    async def get_user_designs(self, user_id: str) -> list:
+        """
+        Get all designs created by a specific user.
+
+        Args:
+            user_id: The Discord user ID
+
+        Returns:
+            List of designs created by the user
+        """
+        try:
+            designs = await self.printful_client.search_products_by_user(user_id)
+            logger.info(f"Retrieved {len(designs)} designs for user {user_id}")
+            return designs
+        except Exception as e:
+            logger.error(f"Error retrieving user designs: {e}", exc_info=True)
+            return []
+
+    async def get_design_statistics(self) -> dict:
+        """
+        Get statistics about all designs in the store.
+
+        Returns:
+            Dictionary with design statistics
+        """
+        try:
+            stats = await self.printful_client.get_design_stats()
+            logger.info(f"Design stats: {stats['total_designs']} total designs")
+            return stats
+        except Exception as e:
+            logger.error(f"Error retrieving design stats: {e}", exc_info=True)
+            return {
+                "total_designs": 0,
+                "unique_users": 0,
+                "designs_per_user": 0,
+                "latest_design": None,
+            }
+
+    async def get_all_designs(self) -> list:
+        """
+        Get all designs ever created.
+
+        Returns:
+            List of all designs
+        """
+        try:
+            designs = await self.printful_client.get_all_designs()
+            logger.info(f"Retrieved {len(designs)} total designs")
+            return designs
+        except Exception as e:
+            logger.error(f"Error retrieving all designs: {e}", exc_info=True)
+            return []
+
     async def process_tshirt_request(
         self,
         message: str,

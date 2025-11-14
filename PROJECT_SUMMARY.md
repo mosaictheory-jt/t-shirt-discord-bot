@@ -10,6 +10,7 @@ A production-ready Discord bot that automatically creates custom t-shirts based 
 - 🎨 **AI-Powered Parsing**: Uses Google Gemini 2.5 Flash to understand user requests
 - 🖼️ **Design Generation**: Creates high-quality 4500x5400px print-ready images
 - 🛍️ **Printful Integration**: Automatic product creation with drop-shipping
+- 📜 **Design Tracking**: All designs stored in Printful, searchable by user
 - 💬 **Natural Responses**: Fun, engaging replies to users
 - 📊 **Full Observability**: Langsmith integration for LLM tracing
 

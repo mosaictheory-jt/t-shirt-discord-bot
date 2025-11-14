@@ -207,19 +207,129 @@ class PrintfulClient:
             data = await response.json()
             return data["result"]
 
-    async def list_products(self) -> list:
+    async def list_products(self, limit: int = 100, offset: int = 0) -> dict:
         """
-        List all products in the Printful store.
+        List all products in the Printful store with pagination.
+
+        Args:
+            limit: Maximum number of products to return (default: 100)
+            offset: Offset for pagination (default: 0)
 
         Returns:
-            List of products
+            Dictionary with 'products' list and pagination info
         """
         if not self.session:
             await self.initialize()
 
         endpoint = f"{self.BASE_URL}/store/products"
+        params = {"limit": limit, "offset": offset}
 
-        async with self.session.get(endpoint) as response:
+        async with self.session.get(endpoint, params=params) as response:
             response.raise_for_status()
             data = await response.json()
-            return data["result"]
+            
+            return {
+                "products": data["result"],
+                "paging": data.get("paging", {}),
+            }
+
+    async def search_products_by_user(self, user_id: str) -> list:
+        """
+        Search for products created by a specific user.
+
+        Args:
+            user_id: Discord user ID
+
+        Returns:
+            List of products created by the user
+        """
+        if not self.session:
+            await self.initialize()
+
+        all_products = []
+        offset = 0
+        limit = 100
+
+        # Fetch all products (Printful doesn't have user-based filtering)
+        while True:
+            result = await self.list_products(limit=limit, offset=offset)
+            products = result["products"]
+            
+            if not products:
+                break
+
+            # Filter products by external_id containing user_id
+            user_products = [
+                p for p in products
+                if p.get("external_id") and user_id in p.get("external_id", "")
+            ]
+            all_products.extend(user_products)
+
+            # Check if there are more products
+            paging = result.get("paging", {})
+            if not paging.get("next"):
+                break
+
+            offset += limit
+
+        logger.info(f"Found {len(all_products)} products for user {user_id}")
+        return all_products
+
+    async def get_all_designs(self) -> list:
+        """
+        Get all designs ever created in the store.
+
+        Returns:
+            List of all products with design information
+        """
+        if not self.session:
+            await self.initialize()
+
+        all_products = []
+        offset = 0
+        limit = 100
+
+        while True:
+            result = await self.list_products(limit=limit, offset=offset)
+            products = result["products"]
+            
+            if not products:
+                break
+
+            all_products.extend(products)
+
+            # Check if there are more products
+            paging = result.get("paging", {})
+            if not paging.get("next"):
+                break
+
+            offset += limit
+
+        logger.info(f"Retrieved {len(all_products)} total designs from store")
+        return all_products
+
+    async def get_design_stats(self) -> dict:
+        """
+        Get statistics about all designs in the store.
+
+        Returns:
+            Dictionary with design statistics
+        """
+        products = await self.get_all_designs()
+
+        # Extract user IDs from external_ids
+        user_ids = set()
+        for product in products:
+            external_id = product.get("external_id", "")
+            if "discord_" in external_id:
+                # Extract user_id from format: discord_userid_hash
+                parts = external_id.split("_")
+                if len(parts) >= 2:
+                    user_ids.add(parts[1])
+
+        return {
+            "total_designs": len(products),
+            "unique_users": len(user_ids),
+            "designs_per_user": len(products) / len(user_ids) if user_ids else 0,
+            "latest_design": products[0] if products else None,
+        }

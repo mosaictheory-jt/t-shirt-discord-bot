@@ -65,6 +65,7 @@ Want to deploy and maintain the bot?
 | Install locally | [Setup Guide](SETUP.md#installation) |
 | Get API keys | [Setup Guide](SETUP.md#getting-api-keys) |
 | Run the bot | [Setup Guide](SETUP.md#running-the-bot) |
+| View design history | [Design Tracking](DESIGN_TRACKING.md) |
 | Deploy to Cloud | [Deployment Guide](DEPLOYMENT.md) |
 | Run tests | [Testing Guide](TESTING.md#running-tests) |
 | Add new feature | [Contributing Guide](CONTRIBUTING.md) |
@@ -90,6 +91,7 @@ docs/
 ├── DEPLOYMENT.md         # Deployment to Google Cloud Run
 ├── ARCHITECTURE.md       # System architecture and design
 ├── API_REFERENCE.md      # Complete API documentation
+├── DESIGN_TRACKING.md    # Design history and tracking
 ├── TESTING.md            # Testing guide and best practices
 ├── GITHUB_ACTIONS.md     # CI/CD pipeline documentation
 └── CONTRIBUTING.md       # Contributing guidelines

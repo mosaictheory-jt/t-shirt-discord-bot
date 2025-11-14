@@ -7,6 +7,7 @@ An intelligent Discord bot that automatically creates custom t-shirts based on u
 - 🎨 **AI-Powered Design Parsing**: Uses Google Gemini to understand natural language requests
 - 🖼️ **Automatic Design Generation**: Creates print-ready t-shirt designs with custom text
 - 🛍️ **Drop-Shipping Integration**: Automatically creates products on Printful for fulfillment
+- 📜 **Design History Tracking**: All designs stored in Printful store, viewable with `!mydesigns`
 - 💬 **Natural Conversation**: Responds with fun, engaging phrases
 - 🚀 **Cloud-Ready**: Easily deployable to Google Cloud Platform
 - 📊 **Observable**: Optional Langsmith integration for LLM tracing and monitoring
@@ -97,6 +98,8 @@ discord-tshirt-bot/
 
 ## 🎨 Example Usage
 
+### Creating a T-Shirt
+
 **User in Discord:**
 > "I need a cool retro shirt that says 'Born in the 80s'"
 
@@ -104,6 +107,23 @@ discord-tshirt-bot/
 > "Got you fam! 🔥
 > 
 > Check out your custom tee: https://www.printful.com/dashboard/store/products/12345"
+
+### Viewing Design History
+
+**User in Discord:**
+> "!mydesigns"
+
+**Bot responds:**
+> **Your Design History** (3 designs):
+> 
+> 1. Born in the 80s - Custom Tee
+>    🔗 View: https://www.printful.com/dashboard/store/products/12345
+> 
+> 2. Code is Life - Custom Tee
+>    🔗 View: https://www.printful.com/dashboard/store/products/12346
+> 
+> 3. Coffee First - Custom Tee
+>    🔗 View: https://www.printful.com/dashboard/store/products/12347
 
 ## 🌟 Key Technologies
 

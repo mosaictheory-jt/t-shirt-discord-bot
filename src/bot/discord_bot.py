@@ -43,11 +43,26 @@ class TShirtBot(commands.Bot):
         
         for guild in self.guilds:
             logger.info(f"  - {guild.name} (ID: {guild.id})")
+        
+        # Log design tracking info
+        try:
+            stats = await self.orchestrator.get_design_statistics()
+            logger.info(
+                f"Design tracking: {stats['total_designs']} total designs, "
+                f"{stats['unique_users']} unique users"
+            )
+        except Exception as e:
+            logger.warning(f"Could not fetch design stats: {e}")
 
     async def on_message(self, message: discord.Message) -> None:
         """Handle incoming messages."""
         # Ignore messages from the bot itself
         if message.author.bot:
+            return
+
+        # Check for history command
+        if message.content.lower().startswith("!mydesigns"):
+            await self._handle_history_command(message)
             return
 
         # Check if message contains trigger keywords
@@ -96,6 +111,46 @@ class TShirtBot(commands.Bot):
                 )
                 await message.reply(
                     "Oof, something went wrong on my end. Try again later, fam!"
+                )
+
+    async def _handle_history_command(self, message: discord.Message) -> None:
+        """
+        Handle the !mydesigns command to show user's design history.
+
+        Args:
+            message: The Discord message
+        """
+        async with message.channel.typing():
+            try:
+                user_id = str(message.author.id)
+                designs = await self.orchestrator.get_user_designs(user_id)
+
+                if not designs:
+                    await message.reply(
+                        "You haven't created any designs yet! "
+                        "Try saying something like 'I want a t-shirt that says Hello World'"
+                    )
+                    return
+
+                # Format the design history
+                response = f"**Your Design History** ({len(designs)} design{'s' if len(designs) != 1 else ''}):\n\n"
+                
+                for i, design in enumerate(designs[:10], 1):  # Limit to 10 most recent
+                    name = design.get("name", "Unnamed Design")
+                    sync_id = design.get("id", "")
+                    response += f"{i}. {name}\n"
+                    response += f"   🔗 View: https://www.printful.com/dashboard/store/products/{sync_id}\n\n"
+
+                if len(designs) > 10:
+                    response += f"\n_Showing 10 of {len(designs)} designs_"
+
+                await message.reply(response)
+                logger.info(f"Sent design history to {message.author} ({len(designs)} designs)")
+
+            except Exception as e:
+                logger.error(f"Error fetching design history: {e}", exc_info=True)
+                await message.reply(
+                    "Oops, couldn't fetch your design history right now. Try again later!"
                 )
 
     async def close(self) -> None:
