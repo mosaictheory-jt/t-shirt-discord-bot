@@ -9,15 +9,15 @@ This guide covers deploying the Discord T-Shirt Bot to Google Cloud Platform.
 - Docker installed (for local testing)
 - All required API keys (Discord, Google, Printful)
 
-## Deployment Options
+## Deployment with Google Cloud Run
 
-### Option 1: Google Cloud Run (Recommended)
-
-Cloud Run is ideal for this bot because:
-- Automatic scaling
-- Pay only for what you use
-- Easy deployment and updates
-- Built-in logging and monitoring
+**Cloud Run is the recommended and supported deployment platform** for this bot because:
+- **Automatic scaling**: Scales to zero when not in use, scales up automatically under load
+- **Cost-effective**: Pay only for what you use (free tier available)
+- **Easy deployment**: Simple one-command deployment
+- **Managed infrastructure**: No server management required
+- **Built-in logging**: Integrated with Cloud Logging
+- **Fast updates**: Deploy new versions in seconds
 
 #### Setup
 
@@ -113,154 +113,46 @@ gcloud run deploy discord-tshirt-bot \
   --set-secrets PRINTFUL_API_KEY=printful-api-key:latest
 ```
 
-### Option 2: Google Compute Engine
+## Alternative: Local Deployment with Docker
 
-For more control and persistent storage:
+For local testing or self-hosted deployment:
 
-1. **Create a VM Instance**
-
-```bash
-gcloud compute instances create discord-bot-vm \
-  --zone=us-central1-a \
-  --machine-type=e2-medium \
-  --image-family=debian-11 \
-  --image-project=debian-cloud \
-  --boot-disk-size=20GB
-```
-
-2. **SSH into the VM**
+1. **Using Docker Compose**
 
 ```bash
-gcloud compute ssh discord-bot-vm --zone=us-central1-a
-```
-
-3. **Install Dependencies**
-
-```bash
-# Install Docker
-sudo apt-get update
-sudo apt-get install -y docker.io docker-compose
-sudo usermod -aG docker $USER
-
-# Log out and back in for group changes
-exit
-gcloud compute ssh discord-bot-vm --zone=us-central1-a
-```
-
-4. **Deploy the Bot**
-
-```bash
-# Clone repository
-git clone <repository-url>
-cd discord-tshirt-bot
-
 # Create .env file with your credentials
+cp .env.example .env
 nano .env
 
 # Run with Docker Compose
 docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the bot
+docker-compose down
 ```
 
-5. **Set Up Auto-Start**
+2. **Direct Docker Run**
 
 ```bash
-# Create systemd service
-sudo nano /etc/systemd/system/discord-bot.service
-```
+# Build the image
+docker build -t discord-tshirt-bot .
 
-Add:
+# Run the container
+docker run -d \
+  --name discord-tshirt-bot \
+  --env-file .env \
+  -v $(pwd)/generated_images:/app/generated_images \
+  -v $(pwd)/logs:/app/logs \
+  discord-tshirt-bot
 
-```ini
-[Unit]
-Description=Discord T-Shirt Bot
-Requires=docker.service
-After=docker.service
+# View logs
+docker logs -f discord-tshirt-bot
 
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-WorkingDirectory=/home/<username>/discord-tshirt-bot
-ExecStart=/usr/bin/docker-compose up -d
-ExecStop=/usr/bin/docker-compose down
-User=<username>
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable discord-bot
-sudo systemctl start discord-bot
-```
-
-### Option 3: Google Kubernetes Engine (GKE)
-
-For high availability and advanced orchestration:
-
-1. **Create a GKE Cluster**
-
-```bash
-gcloud container clusters create discord-bot-cluster \
-  --zone us-central1-a \
-  --num-nodes 2 \
-  --machine-type e2-small
-```
-
-2. **Create Kubernetes Secrets**
-
-```bash
-kubectl create secret generic bot-secrets \
-  --from-literal=discord-bot-token=$DISCORD_BOT_TOKEN \
-  --from-literal=google-api-key=$GOOGLE_API_KEY \
-  --from-literal=printful-api-key=$PRINTFUL_API_KEY
-```
-
-3. **Create Deployment**
-
-```yaml
-# deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: discord-tshirt-bot
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: discord-tshirt-bot
-  template:
-    metadata:
-      labels:
-        app: discord-tshirt-bot
-    spec:
-      containers:
-      - name: bot
-        image: gcr.io/PROJECT_ID/discord-tshirt-bot:latest
-        env:
-        - name: DISCORD_BOT_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: bot-secrets
-              key: discord-bot-token
-        - name: GOOGLE_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: bot-secrets
-              key: google-api-key
-        - name: PRINTFUL_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: bot-secrets
-              key: printful-api-key
-```
-
-4. **Deploy**
-
-```bash
-kubectl apply -f deployment.yaml
+# Stop the container
+docker stop discord-tshirt-bot
 ```
 
 ## Monitoring and Logs
@@ -273,16 +165,12 @@ gcloud run services logs read discord-tshirt-bot \
   --limit 50
 ```
 
-### View Logs (Compute Engine)
+### View Logs (Docker)
 
 ```bash
 docker-compose logs -f
-```
-
-### View Logs (GKE)
-
-```bash
-kubectl logs -f deployment/discord-tshirt-bot
+# or
+docker logs -f discord-tshirt-bot
 ```
 
 ## Updating the Bot
@@ -297,37 +185,26 @@ gcloud run deploy discord-tshirt-bot \
   --region us-central1
 ```
 
-### Compute Engine
+### Local Docker
 
 ```bash
-gcloud compute ssh discord-bot-vm --zone=us-central1-a
-cd discord-tshirt-bot
 git pull
 docker-compose down
 docker-compose up -d --build
 ```
 
-### GKE
-
-```bash
-gcloud builds submit --tag gcr.io/$GCP_PROJECT_ID/discord-tshirt-bot
-kubectl rollout restart deployment/discord-tshirt-bot
-```
-
 ## Cost Optimization
 
-### Cloud Run
-- Uses a pay-per-request model
-- Free tier: 2 million requests/month
-- Memory: 512Mi should be sufficient
-- Timeout: Set to minimum needed (300-600s)
+### Cloud Run Pricing
+- **Free tier**: 2 million requests/month, 360,000 GB-seconds memory/month
+- **Pricing after free tier**:
+  - CPU: $0.00002400 per vCPU-second
+  - Memory: $0.00000250 per GiB-second
+  - Requests: $0.40 per million requests
+- **Typical costs**: $5-20/month for moderate usage
+- **Idle cost**: $0 when not receiving requests (scales to zero)
 
-### Compute Engine
-- Use preemptible VMs for cost savings
-- e2-micro eligible for free tier
-- Consider auto-shutdown during low usage
-
-### Tips
+### Cost Optimization Tips
 - Use Secret Manager for credentials
 - Enable Cloud Logging for debugging
 - Set up budget alerts

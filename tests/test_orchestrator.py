@@ -1,0 +1,187 @@
+"""Tests for orchestrator service."""
+
+import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
+from pathlib import Path
+
+from src.services.orchestrator import TShirtOrchestrator, TShirtResult
+from src.services.llm_parser import TShirtRequest
+from src.services.printful_client import PrintfulProduct
+
+
+class TestTShirtOrchestrator:
+    """Test suite for TShirtOrchestrator."""
+
+    @pytest.fixture
+    def orchestrator(self):
+        """Create an orchestrator instance."""
+        return TShirtOrchestrator()
+
+    @pytest.fixture
+    def sample_request(self):
+        """Create a sample TShirtRequest."""
+        return TShirtRequest(
+            phrase="Hello World",
+            style="modern",
+            wants_image=False,
+            image_description=None,
+            color_preference="black",
+        )
+
+    @pytest.fixture
+    def sample_product(self):
+        """Create a sample PrintfulProduct."""
+        return PrintfulProduct(
+            product_id=71,
+            variant_id=4012,
+            sync_product_id=12345,
+            external_id="test_123",
+            name="Test Product",
+            thumbnail_url="https://example.com/thumb.jpg",
+            retail_price=29.99,
+            currency="USD",
+        )
+
+    @pytest.mark.asyncio
+    async def test_initialize(self, orchestrator):
+        """Test orchestrator initialization."""
+        with patch.object(orchestrator.printful_client, 'initialize', new_callable=AsyncMock) as mock_init:
+            await orchestrator.initialize()
+            mock_init.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_cleanup(self, orchestrator):
+        """Test orchestrator cleanup."""
+        with patch.object(orchestrator.printful_client, 'cleanup', new_callable=AsyncMock) as mock_cleanup:
+            await orchestrator.cleanup()
+            mock_cleanup.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_process_tshirt_request_success(
+        self,
+        orchestrator,
+        sample_request,
+        sample_product,
+    ):
+        """Test successful t-shirt request processing."""
+        # Mock the parser
+        with patch.object(
+            orchestrator.llm_parser,
+            'parse_message',
+            new_callable=AsyncMock,
+            return_value=sample_request,
+        ):
+            # Mock the design generator
+            with patch.object(
+                orchestrator.design_generator,
+                'generate_design',
+                new_callable=AsyncMock,
+                return_value=(Path("/tmp/test.png"), b"fake_image_data"),
+            ):
+                # Mock the Printful client
+                with patch.object(
+                    orchestrator.printful_client,
+                    'create_product',
+                    new_callable=AsyncMock,
+                    return_value=sample_product,
+                ):
+                    result = await orchestrator.process_tshirt_request(
+                        message="I want a shirt that says 'Hello World'",
+                        user_id="test_user_123",
+                        username="TestUser",
+                    )
+
+        assert result.success is True
+        assert result.product_url is not None
+        assert "12345" in result.product_url
+        assert result.response_phrase in TShirtOrchestrator.RESPONSE_PHRASES
+        assert result.phrase == "Hello World"
+        assert result.error_message is None
+
+    @pytest.mark.asyncio
+    async def test_process_tshirt_request_parse_failure(self, orchestrator):
+        """Test request processing when parser returns None."""
+        with patch.object(
+            orchestrator.llm_parser,
+            'parse_message',
+            new_callable=AsyncMock,
+            return_value=None,
+        ):
+            result = await orchestrator.process_tshirt_request(
+                message="invalid message",
+                user_id="test_user",
+                username="TestUser",
+            )
+
+        assert result.success is False
+        assert result.error_message == "Failed to parse message"
+        assert result.product_url is None
+
+    @pytest.mark.asyncio
+    async def test_process_tshirt_request_design_failure(
+        self,
+        orchestrator,
+        sample_request,
+    ):
+        """Test request processing when design generation fails."""
+        with patch.object(
+            orchestrator.llm_parser,
+            'parse_message',
+            new_callable=AsyncMock,
+            return_value=sample_request,
+        ):
+            with patch.object(
+                orchestrator.design_generator,
+                'generate_design',
+                new_callable=AsyncMock,
+                side_effect=Exception("Design generation failed"),
+            ):
+                result = await orchestrator.process_tshirt_request(
+                    message="test message",
+                    user_id="test_user",
+                    username="TestUser",
+                )
+
+        assert result.success is False
+        assert "Design generation failed" in result.error_message
+        assert result.product_url is None
+
+    @pytest.mark.asyncio
+    async def test_process_tshirt_request_printful_failure(
+        self,
+        orchestrator,
+        sample_request,
+    ):
+        """Test request processing when Printful API fails."""
+        with patch.object(
+            orchestrator.llm_parser,
+            'parse_message',
+            new_callable=AsyncMock,
+            return_value=sample_request,
+        ):
+            with patch.object(
+                orchestrator.design_generator,
+                'generate_design',
+                new_callable=AsyncMock,
+                return_value=(Path("/tmp/test.png"), b"fake_data"),
+            ):
+                with patch.object(
+                    orchestrator.printful_client,
+                    'create_product',
+                    new_callable=AsyncMock,
+                    side_effect=Exception("Printful API error"),
+                ):
+                    result = await orchestrator.process_tshirt_request(
+                        message="test message",
+                        user_id="test_user",
+                        username="TestUser",
+                    )
+
+        assert result.success is False
+        assert "Printful API error" in result.error_message
+        assert result.product_url is None
+
+    def test_response_phrases_not_empty(self, orchestrator):
+        """Test that response phrases list is not empty."""
+        assert len(TShirtOrchestrator.RESPONSE_PHRASES) > 0
+        assert all(isinstance(phrase, str) for phrase in TShirtOrchestrator.RESPONSE_PHRASES)

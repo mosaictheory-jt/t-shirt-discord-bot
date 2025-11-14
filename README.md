@@ -14,47 +14,42 @@ An intelligent Discord bot that automatically creates custom t-shirts based on u
 
 ## 🎬 Quick Start
 
-### Prerequisites
+**Get started in 5 minutes!** See [QUICK_START.md](QUICK_START.md) for detailed instructions.
 
-- Python 3.11+
-- UV package manager
-- Discord Bot Token
-- Google API Key (Gemini)
-- Printful API Key
+### TL;DR
 
-### Installation
+```bash
+# 1. Install UV
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-1. **Install UV package manager**:
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
+# 2. Clone and install
+git clone <repository-url>
+cd discord-tshirt-bot
+uv pip install -e .
 
-2. **Clone and setup**:
-   ```bash
-   git clone <repository-url>
-   cd discord-tshirt-bot
-   uv pip install -e .
-   ```
+# 3. Configure
+cp .env.example .env
+# Edit .env with your API keys
 
-3. **Configure environment**:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API keys
-   ```
+# 4. Run
+python -m src.main
+```
 
-4. **Run the bot**:
-   ```bash
-   python -m src.main
-   # Or use the convenience script
-   ./run.sh
-   ```
+Get your API keys:
+- **Discord**: [Developer Portal](https://discord.com/developers/applications)
+- **Google Gemini**: [AI Studio](https://makersuite.google.com/app/apikey)
+- **Printful**: [API Settings](https://www.printful.com/dashboard/store)
 
 ## 📖 Documentation
 
-- **[Setup Guide](docs/SETUP.md)** - Detailed setup instructions and API key configuration
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Deploy to Google Cloud (Cloud Run, GCE, GKE)
-- **[Architecture](docs/ARCHITECTURE.md)** - System design and technical details
+- **[Documentation Index](docs/README.md)** - Complete documentation overview
+- **[Setup Guide](docs/SETUP.md)** - Installation and configuration
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Google Cloud Run deployment
+- **[Architecture](docs/ARCHITECTURE.md)** - System design and components
 - **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
+- **[Testing Guide](docs/TESTING.md)** - Testing and development
+- **[GitHub Actions](docs/GITHUB_ACTIONS.md)** - CI/CD pipeline setup
+- **[Contributing](docs/CONTRIBUTING.md)** - How to contribute
 
 ## 🔧 How It Works
 
@@ -181,16 +176,44 @@ See [Deployment Guide](docs/DEPLOYMENT.md) for detailed instructions.
 ### Running Tests
 
 ```bash
+# Install dev dependencies
 uv pip install -e ".[dev]"
+
+# Run all tests
 pytest
+
+# Run with coverage
+pytest --cov=src --cov-report=term
+
+# Run specific test file
+pytest tests/test_llm_parser.py -v
 ```
+
+See **[Testing Guide](docs/TESTING.md)** for comprehensive testing documentation.
 
 ### Code Formatting
 
 ```bash
-black src/
-ruff check src/
+# Format code
+black src/ tests/
+
+# Lint code
+ruff check src/ tests/
+
+# Fix linting issues
+ruff check --fix src/ tests/
 ```
+
+### GitHub Actions
+
+This project uses GitHub Actions for CI/CD:
+
+- ✅ **Automated Testing** - Runs on every push and PR
+- ✅ **Code Quality Checks** - Linting and formatting
+- ✅ **Security Scanning** - Vulnerability detection
+- ✅ **Automated Deployment** - Deploy to Cloud Run on merge to main
+
+See **[GitHub Actions Guide](docs/GITHUB_ACTIONS.md)** for setup and configuration.
 
 ## 🤝 Contributing
 
