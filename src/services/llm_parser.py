@@ -1,6 +1,5 @@
 """LLM-based message parser using Google Gemini and Langchain."""
 
-import json
 import logging
 from typing import Optional
 
