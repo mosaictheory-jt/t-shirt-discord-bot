@@ -109,7 +109,7 @@ discord-tshirt-bot/
 
 - **Discord.py**: Discord API integration
 - **LangChain**: LLM orchestration framework
-- **Google Gemini 2.0**: Advanced language understanding
+- **Google Gemini 2.5 Flash**: Advanced language understanding
 - **Pillow (PIL)**: Image generation and processing
 - **Printful API**: Print-on-demand fulfillment
 - **Pydantic**: Data validation and settings management

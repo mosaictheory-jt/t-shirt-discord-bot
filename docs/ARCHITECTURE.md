@@ -100,7 +100,7 @@ TShirtRequest(
 - `langchain` - LLM orchestration framework
 - `langchain-google-genai` - Gemini integration
 - `pydantic` - Data validation and parsing
-- Gemini 2.0 Flash model for fast, accurate parsing
+- Gemini 2.5 Flash model for fast, accurate parsing
 
 **Features:**
 - Structured output using Pydantic models

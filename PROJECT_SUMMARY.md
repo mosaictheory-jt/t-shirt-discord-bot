@@ -7,7 +7,7 @@ A production-ready Discord bot that automatically creates custom t-shirts based 
 ## ✨ Key Features
 
 ### Core Functionality
-- 🎨 **AI-Powered Parsing**: Uses Google Gemini 2.0 Flash to understand user requests
+- 🎨 **AI-Powered Parsing**: Uses Google Gemini 2.5 Flash to understand user requests
 - 🖼️ **Design Generation**: Creates high-quality 4500x5400px print-ready images
 - 🛍️ **Printful Integration**: Automatic product creation with drop-shipping
 - 💬 **Natural Responses**: Fun, engaging replies to users
@@ -28,7 +28,7 @@ A production-ready Discord bot that automatically creates custom t-shirts based 
 - Python 3.11+
 - Discord.py - Discord API integration
 - LangChain - LLM orchestration
-- Google Gemini 2.0 Flash - Natural language understanding
+- Google Gemini 2.5 Flash - Natural language understanding
 - Pillow (PIL) - Image generation
 - Pydantic - Data validation
 

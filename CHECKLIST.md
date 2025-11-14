@@ -18,7 +18,7 @@ This document verifies that all project requirements have been met.
 ### Required Technologies
 - [x] Python as primary language
 - [x] UV for package management
-- [x] Google Gemini for LLM (latest model: 2.0 Flash)
+- [x] Google Gemini for LLM (latest model: 2.5 Flash)
 - [x] LangChain for orchestration
 - [x] Langsmith for tracing
 - [x] Discord.py for bot functionality
@@ -202,7 +202,7 @@ This document verifies that all project requirements have been met.
 
 ## ✅ LLM Integration
 
-- [x] Google Gemini 2.0 Flash integration
+- [x] Google Gemini 2.5 Flash integration
 - [x] LangChain orchestration
 - [x] Structured output (Pydantic)
 - [x] Fallback parsing
@@ -265,7 +265,7 @@ This document verifies that all project requirements have been met.
 ✅ Text-based designs with optional pictures
 ✅ AI-based generation (Gemini)
 ✅ Uses Gemini for LLMs
-✅ Latest Gemini models (2.0 Flash)
+✅ Latest Gemini models (2.5 Flash)
 ✅ LangChain orchestration
 ✅ Langsmith integration
 ✅ Clean repository organization
