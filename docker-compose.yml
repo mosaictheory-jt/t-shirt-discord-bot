@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  discord-bot:
+    build: .
+    container_name: discord-tshirt-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./generated_images:/app/generated_images
+      - ./logs:/app/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
