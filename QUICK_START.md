@@ -21,7 +21,7 @@ git clone <repository-url>
 cd discord-tshirt-bot
 
 # Install dependencies
-uv pip install -e .
+uv pip install -r requirements.txt
 ```
 
 ## Step 3: Get API Keys

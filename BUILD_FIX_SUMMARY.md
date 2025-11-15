@@ -129,7 +129,7 @@ src/
 ### 1. Install Package
 ```bash
 # Clean environment
-uv pip install -e .
+uv pip install -r requirements.txt
 ```
 
 Expected: ✅ Installation succeeds without errors
@@ -145,7 +145,7 @@ Expected: ✅ All imports successful
 
 ### 3. Run Tests
 ```bash
-uv pip install -e ".[dev]"
+uv pip install -r requirements-dev.txt
 pytest
 ```
 

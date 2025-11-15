@@ -26,7 +26,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # 2. Clone and install
 git clone <repository-url>
 cd discord-tshirt-bot
-uv pip install -e .
+uv pip install -r requirements.txt
 
 # 3. Configure
 cp .env.example .env
@@ -196,8 +196,8 @@ See [Deployment Guide](docs/DEPLOYMENT.md) for detailed instructions.
 ### Running Tests
 
 ```bash
-# Install dev dependencies
-uv pip install -e ".[dev]"
+# Install dependencies (including dev tools)
+uv pip install -r requirements-dev.txt
 
 # Run all tests
 pytest

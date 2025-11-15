@@ -20,7 +20,7 @@ fi
 
 # Install dependencies
 echo "Installing dependencies..."
-uv pip install -e .
+uv pip install -r requirements.txt
 
 # Create necessary directories
 mkdir -p generated_images

@@ -22,7 +22,7 @@ Thank you for your interest in contributing to the Discord T-Shirt Bot! This gui
 
 2. **Install dependencies**:
    ```bash
-   uv pip install -e ".[dev]"
+   uv pip install -r requirements-dev.txt
    ```
 
 3. **Set up environment variables**:

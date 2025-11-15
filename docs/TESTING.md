@@ -27,12 +27,13 @@ tests/
 Install test dependencies:
 
 ```bash
-uv pip install -e ".[dev]"
+uv pip install -r requirements-dev.txt
 ```
 
-Or install directly:
+Or install just the runtime dependencies and tests:
 
 ```bash
+uv pip install -r requirements.txt
 uv pip install pytest pytest-asyncio pytest-cov
 ```
 

@@ -29,7 +29,12 @@ cd discord-tshirt-bot
 ### 3. Install Dependencies
 
 ```bash
-uv pip install -e .
+uv pip install -r requirements.txt
+```
+
+Or for development (includes test tools):
+```bash
+uv pip install -r requirements-dev.txt
 ```
 
 ### 4. Set Up Environment Variables

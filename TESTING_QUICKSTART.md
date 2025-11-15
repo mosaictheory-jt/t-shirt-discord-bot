@@ -5,7 +5,7 @@ Quick reference for running tests in this project.
 ## Install Test Dependencies
 
 ```bash
-uv pip install -e ".[dev]"
+uv pip install -r requirements-dev.txt
 ```
 
 ## Run Tests
