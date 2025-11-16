@@ -34,6 +34,8 @@ class TestDesignTracking:
             ],
             "paging": {"next": None}
         })
+        mock_response.__aenter__.return_value = mock_response
+        mock_response.__aexit__.return_value = AsyncMock()
 
         with patch.object(client.session, 'get', return_value=mock_response):
             result = await client.list_products(limit=10, offset=0)
@@ -59,6 +61,8 @@ class TestDesignTracking:
             ],
             "paging": {"next": None}
         })
+        mock_response.__aenter__.return_value = mock_response
+        mock_response.__aexit__.return_value = AsyncMock()
 
         with patch.object(client.session, 'get', return_value=mock_response):
             designs = await client.search_products_by_user("123")
@@ -83,6 +87,8 @@ class TestDesignTracking:
             ],
             "paging": {"next": "next_url"}
         })
+        mock_response_1.__aenter__.return_value = mock_response_1
+        mock_response_1.__aexit__.return_value = AsyncMock()
 
         mock_response_2 = AsyncMock()
         mock_response_2.raise_for_status = MagicMock()
@@ -92,6 +98,8 @@ class TestDesignTracking:
             ],
             "paging": {"next": None}
         })
+        mock_response_2.__aenter__.return_value = mock_response_2
+        mock_response_2.__aexit__.return_value = AsyncMock()
 
         with patch.object(
             client.session,
@@ -121,6 +129,8 @@ class TestDesignTracking:
             ],
             "paging": {"next": None}
         })
+        mock_response.__aenter__.return_value = mock_response
+        mock_response.__aexit__.return_value = AsyncMock()
 
         with patch.object(client.session, 'get', return_value=mock_response):
             stats = await client.get_design_stats()
@@ -203,6 +213,8 @@ class TestDesignTracking:
             "result": [],
             "paging": {"next": None}
         })
+        mock_response.__aenter__.return_value = mock_response
+        mock_response.__aexit__.return_value = AsyncMock()
 
         with patch.object(client.session, 'get', return_value=mock_response):
             designs = await client.search_products_by_user("999")
@@ -222,6 +234,8 @@ class TestDesignTracking:
             "result": [],
             "paging": {"next": None}
         })
+        mock_response.__aenter__.return_value = mock_response
+        mock_response.__aexit__.return_value = AsyncMock()
 
         with patch.object(client.session, 'get', return_value=mock_response):
             stats = await client.get_design_stats()
