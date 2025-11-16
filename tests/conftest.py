@@ -10,6 +10,7 @@ def pytest_configure(config):
     os.environ["DISCORD_BOT_TOKEN"] = "test_discord_token"
     os.environ["GOOGLE_API_KEY"] = "test_google_key"
     os.environ["PRINTFUL_API_KEY"] = "test_printful_key"
+    os.environ["PRINTFUL_STORE_ID"] = "test_store_id"
     os.environ["LANGCHAIN_API_KEY"] = "test_langchain_key"
     os.environ["LANGCHAIN_TRACING_V2"] = "false"
     os.environ["BOT_LOG_LEVEL"] = "ERROR"
