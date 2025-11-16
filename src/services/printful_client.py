@@ -32,6 +32,7 @@ class PrintfulClient:
     def __init__(self):
         """Initialize the Printful client."""
         self.api_key = settings.printful_api_key
+        self.store_id = settings.printful_store_id
         self.session: Optional[aiohttp.ClientSession] = None
 
     async def initialize(self) -> None:
@@ -145,6 +146,7 @@ class PrintfulClient:
             PrintfulProduct object
         """
         endpoint = f"{self.BASE_URL}/store/products"
+        params = {"store_id": self.store_id}
 
         payload = {
             "sync_product": {
@@ -165,7 +167,7 @@ class PrintfulClient:
             ],
         }
 
-        async with self.session.post(endpoint, json=payload) as response:
+        async with self.session.post(endpoint, json=payload, params=params) as response:
             response.raise_for_status()
             data = await response.json()
 
@@ -201,8 +203,9 @@ class PrintfulClient:
             await self.initialize()
 
         endpoint = f"{self.BASE_URL}/store/products/{sync_product_id}"
+        params = {"store_id": self.store_id}
 
-        async with self.session.get(endpoint) as response:
+        async with self.session.get(endpoint, params=params) as response:
             response.raise_for_status()
             data = await response.json()
             return data["result"]
@@ -222,7 +225,7 @@ class PrintfulClient:
             await self.initialize()
 
         endpoint = f"{self.BASE_URL}/store/products"
-        params = {"limit": limit, "offset": offset}
+        params = {"store_id": self.store_id, "limit": limit, "offset": offset}
 
         try:
             async with self.session.get(endpoint, params=params) as response:

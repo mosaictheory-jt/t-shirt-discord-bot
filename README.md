@@ -149,6 +149,7 @@ GOOGLE_API_KEY=your_key_here
 
 # Printful
 PRINTFUL_API_KEY=your_key_here
+PRINTFUL_STORE_ID=your_store_id_here
 
 # Optional: Langsmith tracing
 LANGCHAIN_API_KEY=your_key_here

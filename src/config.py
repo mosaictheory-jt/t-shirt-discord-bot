@@ -42,6 +42,7 @@ class Settings(BaseSettings):
 
     # Printful API
     printful_api_key: str = Field(..., description="Printful API key")
+    printful_store_id: str = Field(..., description="Printful store ID")
 
     # Bot Configuration
     bot_trigger_keywords: str = Field(

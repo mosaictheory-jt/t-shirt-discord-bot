@@ -67,6 +67,7 @@ gcloud services enable containerregistry.googleapis.com
 export DISCORD_BOT_TOKEN="your-discord-bot-token"
 export GOOGLE_API_KEY="your-google-api-key"
 export PRINTFUL_API_KEY="your-printful-api-key"
+export PRINTFUL_STORE_ID="your-printful-store-id"
 export LANGCHAIN_API_KEY="your-langsmith-api-key"  # Optional
 ```
 
@@ -94,6 +95,7 @@ gcloud run deploy discord-tshirt-bot \
   --set-env-vars DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN \
   --set-env-vars GOOGLE_API_KEY=$GOOGLE_API_KEY \
   --set-env-vars PRINTFUL_API_KEY=$PRINTFUL_API_KEY \
+  --set-env-vars PRINTFUL_STORE_ID=$PRINTFUL_STORE_ID \
   --set-env-vars LANGCHAIN_API_KEY=$LANGCHAIN_API_KEY \
   --memory 512Mi \
   --timeout 3600
@@ -115,6 +117,10 @@ echo -n "$PRINTFUL_API_KEY" | gcloud secrets create printful-api-key \
   --replication-policy="automatic" \
   --data-file=-
 
+echo -n "$PRINTFUL_STORE_ID" | gcloud secrets create printful-store-id \
+  --replication-policy="automatic" \
+  --data-file=-
+
 # Deploy with secrets
 gcloud run deploy discord-tshirt-bot \
   --image gcr.io/$GCP_PROJECT_ID/discord-tshirt-bot \
@@ -122,7 +128,8 @@ gcloud run deploy discord-tshirt-bot \
   --platform managed \
   --set-secrets DISCORD_BOT_TOKEN=discord-bot-token:latest \
   --set-secrets GOOGLE_API_KEY=google-api-key:latest \
-  --set-secrets PRINTFUL_API_KEY=printful-api-key:latest
+  --set-secrets PRINTFUL_API_KEY=printful-api-key:latest \
+  --set-secrets PRINTFUL_STORE_ID=printful-store-id:latest
 ```
 
 ## Alternative: Local Deployment with Docker

@@ -28,6 +28,11 @@ if [ -z "$PRINTFUL_API_KEY" ]; then
     exit 1
 fi
 
+if [ -z "$PRINTFUL_STORE_ID" ]; then
+    echo "Error: PRINTFUL_STORE_ID is not set"
+    exit 1
+fi
+
 # Store secrets in Secret Manager
 echo "Storing secrets in Secret Manager..."
 echo -n "$DISCORD_BOT_TOKEN" | gcloud secrets create discord-bot-token \
@@ -51,6 +56,14 @@ echo -n "$PRINTFUL_API_KEY" | gcloud secrets create printful-api-key \
     --data-file=- \
     --project="$PROJECT_ID" || \
     echo -n "$PRINTFUL_API_KEY" | gcloud secrets versions add printful-api-key \
+    --data-file=- \
+    --project="$PROJECT_ID"
+
+echo -n "$PRINTFUL_STORE_ID" | gcloud secrets create printful-store-id \
+    --replication-policy="automatic" \
+    --data-file=- \
+    --project="$PROJECT_ID" || \
+    echo -n "$PRINTFUL_STORE_ID" | gcloud secrets versions add printful-store-id \
     --data-file=- \
     --project="$PROJECT_ID"
 
