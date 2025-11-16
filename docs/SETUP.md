@@ -62,6 +62,7 @@ LANGCHAIN_PROJECT=discord-tshirt-bot
 
 # Printful API
 PRINTFUL_API_KEY=your_printful_api_key_here
+PRINTFUL_STORE_ID=your_printful_store_id_here
 
 # Bot Configuration
 BOT_TRIGGER_KEYWORDS=tshirt,t-shirt,shirt,merch
@@ -94,15 +95,16 @@ BOT_LOG_LEVEL=INFO
 2. Click "Create API Key"
 3. Copy the generated API key
 
-### Printful API Key
+### Printful API Key and Store ID
 
 1. Go to [Printful](https://www.printful.com/)
 2. Sign up or log in
 3. Go to Settings > Stores
 4. Create a new store or select an existing one
-5. Go to Settings > API
-6. Generate an API key
-7. Copy the key
+5. Note the Store ID (found in the store URL or store settings)
+6. Go to Settings > API
+7. Generate an API key
+8. Copy both the API key and Store ID
 
 ### Langsmith API Key (Optional)
 
