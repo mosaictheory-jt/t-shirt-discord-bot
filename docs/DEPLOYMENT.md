@@ -9,12 +9,24 @@ This guide covers deploying the Discord T-Shirt Bot to Google Cloud Platform.
 - Docker installed (for local testing)
 - All required API keys (Discord, Google, Printful)
 
-## Deployment with Google Cloud Run
+## Deployment Methods
 
-**Cloud Run is the recommended and supported deployment platform** for this bot because:
+### Cloud Build (Recommended)
+
+This project uses **Google Cloud Build** for automated CI/CD. The `cloudbuild.yaml` configuration handles:
+- Building the Docker image
+- Pushing to Google Container Registry (GCR)
+- Deploying to Cloud Run
+- Managing secrets via Secret Manager
+
+To trigger a Cloud Build deployment, push changes to your repository and configure a Cloud Build trigger.
+
+### Manual Deployment with Google Cloud Run
+
+Cloud Run is the deployment platform for this bot because:
 - **Automatic scaling**: Scales to zero when not in use, scales up automatically under load
 - **Cost-effective**: Pay only for what you use (free tier available)
-- **Easy deployment**: Simple one-command deployment
+- **Easy deployment**: Automated via Cloud Build or manual one-command deployment
 - **Managed infrastructure**: No server management required
 - **Built-in logging**: Integrated with Cloud Logging
 - **Fast updates**: Deploy new versions in seconds

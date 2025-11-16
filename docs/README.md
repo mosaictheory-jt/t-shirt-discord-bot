@@ -21,7 +21,6 @@ Understanding how the bot works:
 Deploying to production:
 
 - **[Deployment Guide](DEPLOYMENT.md)** - Google Cloud Run deployment (recommended)
-- **[GitHub Actions Guide](GITHUB_ACTIONS.md)** - CI/CD pipeline setup
 
 ## 🧪 Testing
 
@@ -53,8 +52,7 @@ Want to modify or contribute to the bot?
 Want to deploy and maintain the bot?
 
 1. [Deployment Guide](DEPLOYMENT.md) - Cloud Run deployment
-2. [GitHub Actions Guide](GITHUB_ACTIONS.md) - CI/CD setup
-3. [Architecture](ARCHITECTURE.md#deployment-architecture) - Deployment architecture
+2. [Architecture](ARCHITECTURE.md#deployment-architecture) - Deployment architecture
 
 ## 🔍 Quick Reference
 
@@ -70,7 +68,6 @@ Want to deploy and maintain the bot?
 | Run tests | [Testing Guide](TESTING.md#running-tests) |
 | Add new feature | [Contributing Guide](CONTRIBUTING.md) |
 | Debug issues | [Setup Guide](SETUP.md#troubleshooting) |
-| Set up CI/CD | [GitHub Actions Guide](GITHUB_ACTIONS.md) |
 
 ### Service Documentation
 
@@ -93,7 +90,6 @@ docs/
 ├── API_REFERENCE.md      # Complete API documentation
 ├── DESIGN_TRACKING.md    # Design history and tracking
 ├── TESTING.md            # Testing guide and best practices
-├── GITHUB_ACTIONS.md     # CI/CD pipeline documentation
 └── CONTRIBUTING.md       # Contributing guidelines
 ```
 
@@ -133,7 +129,6 @@ Can't find what you need?
 | Architecture | ✅ Complete | Latest |
 | API Reference | ✅ Complete | Latest |
 | Testing Guide | ✅ Complete | Latest |
-| GitHub Actions | ✅ Complete | Latest |
 | Contributing | ✅ Complete | Latest |
 
 ## 🔄 Keeping Documentation Updated

@@ -293,25 +293,13 @@ open htmlcov/index.html
 
 ## Continuous Integration
 
-### GitHub Actions
+### Google Cloud Build
 
-Tests run automatically on:
-- Every push to `main` or `develop`
-- Every pull request
+The project uses Google Cloud Build for automated building and deployment (see `cloudbuild.yaml` in the project root).
 
-See `.github/workflows/ci.yml` for the full pipeline.
+### Running Checks Locally
 
-### CI Pipeline Stages
-
-1. **Lint**: Code quality checks (Black, Ruff)
-2. **Test**: Run test suite on Python 3.11 and 3.12
-3. **Security**: Security scanning (Bandit, Safety)
-4. **Docker**: Build and test Docker image
-5. **Deploy**: Deploy to Cloud Run (main branch only)
-
-### Local CI Simulation
-
-Run the same checks locally:
+Run the same checks locally before pushing:
 
 ```bash
 # Format check
