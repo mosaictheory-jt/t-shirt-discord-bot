@@ -207,12 +207,12 @@ class PrintfulClient:
             data = await response.json()
             return data["result"]
 
-    async def list_products(self, limit: int = 100, offset: int = 0) -> dict:
+    async def list_products(self, limit: int = 20, offset: int = 0) -> dict:
         """
         List all products in the Printful store with pagination.
 
         Args:
-            limit: Maximum number of products to return (default: 100)
+            limit: Maximum number of products to return (default: 20, max: 100)
             offset: Offset for pagination (default: 0)
 
         Returns:
@@ -224,14 +224,26 @@ class PrintfulClient:
         endpoint = f"{self.BASE_URL}/store/products"
         params = {"limit": limit, "offset": offset}
 
-        async with self.session.get(endpoint, params=params) as response:
-            response.raise_for_status()
-            data = await response.json()
-            
-            return {
-                "products": data["result"],
-                "paging": data.get("paging", {}),
-            }
+        try:
+            async with self.session.get(endpoint, params=params) as response:
+                if response.status != 200:
+                    error_body = await response.text()
+                    logger.error(
+                        f"Printful API error (status {response.status}): {error_body}"
+                    )
+                    # Return empty result for graceful degradation
+                    return {"products": [], "paging": {}}
+                
+                data = await response.json()
+                
+                return {
+                    "products": data.get("result", []),
+                    "paging": data.get("paging", {}),
+                }
+        except Exception as e:
+            logger.error(f"Failed to list products: {e}", exc_info=True)
+            # Return empty result for graceful degradation
+            return {"products": [], "paging": {}}
 
     async def search_products_by_user(self, user_id: str) -> list:
         """
@@ -248,7 +260,7 @@ class PrintfulClient:
 
         all_products = []
         offset = 0
-        limit = 100
+        limit = 20
 
         # Fetch all products (Printful doesn't have user-based filtering)
         while True:
@@ -287,7 +299,7 @@ class PrintfulClient:
 
         all_products = []
         offset = 0
-        limit = 100
+        limit = 20
 
         while True:
             result = await self.list_products(limit=limit, offset=offset)
