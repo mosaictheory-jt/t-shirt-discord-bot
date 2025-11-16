@@ -1,19 +1,19 @@
-"""Tests for Printful API client."""
+"""Tests for Teemill API client."""
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 import aiohttp
 
-from src.services.printful_client import PrintfulClient, PrintfulProduct
+from src.services.teemill_client import TeemillClient, TeemillProduct
 
 
-class TestPrintfulClient:
-    """Test suite for PrintfulClient."""
+class TestTeemillClient:
+    """Test suite for TeemillClient."""
 
     @pytest.fixture
     def client(self):
         """Create a client instance."""
-        return PrintfulClient()
+        return TeemillClient()
 
     @pytest.mark.asyncio
     async def test_initialize(self, client):
@@ -34,62 +34,60 @@ class TestPrintfulClient:
         assert client.session is None
 
     @pytest.mark.asyncio
-    async def test_upload_design_file(self, client):
-        """Test design file upload."""
+    async def test_upload_design_image(self, client):
+        """Test design image upload."""
         await client.initialize()
         
         mock_response = AsyncMock()
         mock_response.raise_for_status = MagicMock()
         mock_response.json = AsyncMock(return_value={
-            "result": {"id": 12345}
+            "url": "https://teemill.com/designs/12345.png"
         })
         mock_response.__aenter__.return_value = mock_response
         mock_response.__aexit__.return_value = AsyncMock()
         
         with patch.object(client.session, 'post', return_value=mock_response):
-            file_id = await client._upload_design_file("data:image/png;base64,abc123")
+            image_url = await client._upload_design_image("data:image/png;base64,abc123")
             
-            assert file_id == 12345
+            assert image_url == "https://teemill.com/designs/12345.png"
         
         await client.cleanup()
 
     @pytest.mark.asyncio
-    async def test_create_sync_product(self, client):
-        """Test sync product creation."""
+    async def test_create_order(self, client):
+        """Test order creation."""
         await client.initialize()
         
         mock_response = AsyncMock()
         mock_response.raise_for_status = MagicMock()
         mock_response.json = AsyncMock(return_value={
-            "result": {
-                "sync_product": {
-                    "id": 67890,
-                    "name": "Test Product",
-                    "thumbnail_url": "https://example.com/thumb.jpg"
-                },
-                "sync_variants": [{
-                    "id": 111,
-                    "retail_price": "29.99",
-                    "currency": "USD"
-                }]
-            }
+            "order_id": "order_123",
+            "id": "order_123",
+            "products": [{
+                "id": "prod_456",
+                "product_id": "prod_456",
+                "variant_id": "var_789",
+                "price": 25.0,
+                "currency": "GBP",
+                "thumbnail_url": "https://teemill.com/thumb.jpg"
+            }],
+            "url": "https://teemill.com/order/order_123"
         })
         mock_response.__aenter__.return_value = mock_response
         mock_response.__aexit__.return_value = AsyncMock()
         
         with patch.object(client.session, 'post', return_value=mock_response):
-            product = await client._create_sync_product(
-                product_id=71,
-                variant_id=4012,
-                file_id=12345,
+            product = await client._create_order(
                 product_name="Test Product",
+                image_url="https://teemill.com/designs/12345.png",
                 external_id="test_123",
             )
             
-            assert isinstance(product, PrintfulProduct)
-            assert product.sync_product_id == 67890
+            assert isinstance(product, TeemillProduct)
+            assert product.order_id == "order_123"
             assert product.name == "Test Product"
-            assert product.retail_price == 29.99
+            assert product.retail_price == 25.0
+            assert product.product_url == "https://teemill.com/order/order_123"
         
         await client.cleanup()
 
@@ -102,42 +100,38 @@ class TestPrintfulClient:
         upload_response = AsyncMock()
         upload_response.raise_for_status = MagicMock()
         upload_response.json = AsyncMock(return_value={
-            "result": {"id": 12345}
+            "url": "https://teemill.com/designs/12345.png"
         })
         upload_response.__aenter__.return_value = upload_response
         upload_response.__aexit__.return_value = AsyncMock()
         
-        # Mock sync product response
-        sync_response = AsyncMock()
-        sync_response.raise_for_status = MagicMock()
-        sync_response.json = AsyncMock(return_value={
-            "result": {
-                "sync_product": {
-                    "id": 67890,
-                    "name": "Test Product",
-                    "thumbnail_url": "https://example.com/thumb.jpg"
-                },
-                "sync_variants": [{
-                    "id": 111,
-                    "retail_price": "29.99",
-                    "currency": "USD"
-                }]
-            }
+        # Mock order creation response
+        order_response = AsyncMock()
+        order_response.raise_for_status = MagicMock()
+        order_response.json = AsyncMock(return_value={
+            "order_id": "order_123",
+            "products": [{
+                "id": "prod_456",
+                "price": 25.0,
+                "currency": "GBP",
+                "thumbnail_url": "https://teemill.com/thumb.jpg"
+            }],
+            "url": "https://teemill.com/order/order_123"
         })
-        sync_response.__aenter__.return_value = sync_response
-        sync_response.__aexit__.return_value = AsyncMock()
+        order_response.__aenter__.return_value = order_response
+        order_response.__aexit__.return_value = AsyncMock()
         
-        with patch.object(client.session, 'post', side_effect=[upload_response, sync_response]):
+        with patch.object(client.session, 'post', side_effect=[upload_response, order_response]):
             product = await client.create_product(
                 design_image_url="data:image/png;base64,abc123",
                 product_name="Test T-Shirt",
                 user_id="user_123",
             )
             
-            assert isinstance(product, PrintfulProduct)
-            assert product.sync_product_id == 67890
-            assert product.product_id == 71
-            assert product.variant_id == 4012
+            assert isinstance(product, TeemillProduct)
+            assert product.order_id == "order_123"
+            assert product.product_id == "prod_456"
+            assert product.product_url == "https://teemill.com/order/order_123"
         
         await client.cleanup()
 
@@ -149,21 +143,20 @@ class TestPrintfulClient:
         mock_response = AsyncMock()
         mock_response.raise_for_status = MagicMock()
         mock_response.json = AsyncMock(return_value={
-            "result": {
-                "sync_product": {
-                    "id": 12345,
-                    "name": "Test Product"
-                }
-            }
+            "order_id": "order_123",
+            "products": [{
+                "id": "prod_456",
+                "name": "Test Product"
+            }]
         })
         mock_response.__aenter__.return_value = mock_response
         mock_response.__aexit__.return_value = AsyncMock()
         
         with patch.object(client.session, 'get', return_value=mock_response):
-            info = await client.get_product_info(12345)
+            info = await client.get_product_info("order_123")
             
-            assert info["sync_product"]["id"] == 12345
-            assert info["sync_product"]["name"] == "Test Product"
+            assert info["order_id"] == "order_123"
+            assert info["products"][0]["name"] == "Test Product"
         
         await client.cleanup()
 
@@ -175,10 +168,11 @@ class TestPrintfulClient:
         mock_response = AsyncMock()
         mock_response.raise_for_status = MagicMock()
         mock_response.json = AsyncMock(return_value={
-            "result": [
-                {"id": 1, "name": "Product 1"},
-                {"id": 2, "name": "Product 2"}
-            ]
+            "orders": [
+                {"id": "order_1", "order_id": "order_1"},
+                {"id": "order_2", "order_id": "order_2"}
+            ],
+            "total": 2
         })
         mock_response.__aenter__.return_value = mock_response
         mock_response.__aexit__.return_value = AsyncMock()
@@ -188,7 +182,7 @@ class TestPrintfulClient:
             
             assert "products" in result
             assert len(result["products"]) == 2
-            assert result["products"][0]["id"] == 1
-            assert result["products"][1]["name"] == "Product 2"
+            assert result["products"][0]["id"] == "order_1"
+            assert result["products"][1]["order_id"] == "order_2"
         
         await client.cleanup()

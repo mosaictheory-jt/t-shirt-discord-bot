@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 from pathlib import Path
 
 from src.services.orchestrator import TShirtOrchestrator
-from src.services.printful_client import PrintfulProduct
+from src.services.teemill_client import TeemillProduct
 
 
 @pytest.mark.integration
@@ -20,25 +20,26 @@ class TestFullWorkflow:
     @pytest.mark.asyncio
     async def test_complete_workflow_mock_apis(self, orchestrator):
         """Test complete workflow with mocked external APIs."""
-        # Mock Printful client
-        mock_product = PrintfulProduct(
-            product_id=71,
-            variant_id=4012,
-            sync_product_id=99999,
+        # Mock Teemill client
+        mock_product = TeemillProduct(
+            order_id="order_99999",
+            product_id="prod_123",
+            variant_id="var_456",
             external_id="test_integration",
             name="Integration Test Product",
             thumbnail_url="https://example.com/thumb.jpg",
             retail_price=29.99,
-            currency="USD",
+            currency="GBP",
+            product_url="https://teemill.com/order/order_99999",
         )
 
         with patch.object(
-            orchestrator.printful_client,
+            orchestrator.teemill_client,
             'initialize',
             new_callable=AsyncMock,
         ):
             with patch.object(
-                orchestrator.printful_client,
+                orchestrator.teemill_client,
                 'create_product',
                 new_callable=AsyncMock,
                 return_value=mock_product,
@@ -56,7 +57,7 @@ class TestFullWorkflow:
                 # Verify success
                 assert result.success is True
                 assert result.product_url is not None
-                assert "99999" in result.product_url
+                assert "order_99999" in result.product_url
                 assert result.response_phrase is not None
                 assert result.error_message is None
 
@@ -66,24 +67,25 @@ class TestFullWorkflow:
     @pytest.mark.asyncio
     async def test_workflow_with_simple_phrase(self, orchestrator):
         """Test workflow with a simple phrase."""
-        mock_product = PrintfulProduct(
-            product_id=71,
-            variant_id=4012,
-            sync_product_id=88888,
+        mock_product = TeemillProduct(
+            order_id="order_88888",
+            product_id="prod_888",
+            variant_id="var_888",
             external_id="test_simple",
             name="Simple Test",
             thumbnail_url="https://example.com/thumb.jpg",
             retail_price=29.99,
-            currency="USD",
+            currency="GBP",
+            product_url="https://teemill.com/order/order_88888",
         )
 
         with patch.object(
-            orchestrator.printful_client,
+            orchestrator.teemill_client,
             'initialize',
             new_callable=AsyncMock,
         ):
             with patch.object(
-                orchestrator.printful_client,
+                orchestrator.teemill_client,
                 'create_product',
                 new_callable=AsyncMock,
                 return_value=mock_product,
@@ -104,24 +106,25 @@ class TestFullWorkflow:
     @pytest.mark.asyncio
     async def test_workflow_with_complex_request(self, orchestrator):
         """Test workflow with complex multi-part request."""
-        mock_product = PrintfulProduct(
-            product_id=71,
-            variant_id=4012,
-            sync_product_id=77777,
+        mock_product = TeemillProduct(
+            order_id="order_77777",
+            product_id="prod_777",
+            variant_id="var_777",
             external_id="test_complex",
             name="Complex Test",
             thumbnail_url="https://example.com/thumb.jpg",
             retail_price=29.99,
-            currency="USD",
+            currency="GBP",
+            product_url="https://teemill.com/order/order_77777",
         )
 
         with patch.object(
-            orchestrator.printful_client,
+            orchestrator.teemill_client,
             'initialize',
             new_callable=AsyncMock,
         ):
             with patch.object(
-                orchestrator.printful_client,
+                orchestrator.teemill_client,
                 'create_product',
                 new_callable=AsyncMock,
                 return_value=mock_product,
@@ -147,14 +150,14 @@ class TestFullWorkflow:
     @pytest.mark.asyncio
     async def test_error_recovery(self, orchestrator):
         """Test that system handles errors gracefully."""
-        # Simulate Printful API failure
+        # Simulate Teemill API failure
         with patch.object(
-            orchestrator.printful_client,
+            orchestrator.teemill_client,
             'initialize',
             new_callable=AsyncMock,
         ):
             with patch.object(
-                orchestrator.printful_client,
+                orchestrator.teemill_client,
                 'create_product',
                 new_callable=AsyncMock,
                 side_effect=Exception("API Timeout"),
