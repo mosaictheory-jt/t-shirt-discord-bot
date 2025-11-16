@@ -40,9 +40,8 @@ class Settings(BaseSettings):
         description="Langsmith project name",
     )
 
-    # Printful API
-    printful_api_key: str = Field(..., description="Printful API key")
-    printful_store_id: str = Field(..., description="Printful store ID")
+    # Teemill API
+    teemill_api_key: str = Field(..., description="Teemill API key")
 
     # Bot Configuration
     bot_trigger_keywords: str = Field(

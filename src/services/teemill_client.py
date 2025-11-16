@@ -1,7 +1,7 @@
-"""Printful API client for creating and managing t-shirt products."""
+"""Teemill API client for creating and managing t-shirt products."""
 
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 import aiohttp
 from pydantic import BaseModel
@@ -11,28 +11,28 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 
-class PrintfulProduct(BaseModel):
-    """Printful product information."""
+class TeemillProduct(BaseModel):
+    """Teemill product information."""
 
-    product_id: int
-    variant_id: int
-    sync_product_id: Optional[int] = None
+    order_id: Optional[str] = None
+    product_id: Optional[str] = None
+    variant_id: Optional[str] = None
     external_id: Optional[str] = None
     name: str
     thumbnail_url: Optional[str] = None
     retail_price: Optional[float] = None
-    currency: str = "USD"
+    currency: str = "GBP"
+    product_url: Optional[str] = None
 
 
-class PrintfulClient:
-    """Client for interacting with the Printful API."""
+class TeemillClient:
+    """Client for interacting with the Teemill API."""
 
-    BASE_URL = "https://api.printful.com"
+    BASE_URL = "https://api.teemill.com/v1"
 
     def __init__(self):
-        """Initialize the Printful client."""
-        self.api_key = settings.printful_api_key
-        self.store_id = settings.printful_store_id
+        """Initialize the Teemill client."""
+        self.api_key = settings.teemill_api_key
         self.session: Optional[aiohttp.ClientSession] = None
 
     async def initialize(self) -> None:
@@ -44,23 +44,23 @@ class PrintfulClient:
                     "Content-Type": "application/json",
                 }
             )
-            logger.info("Initialized Printful API client")
+            logger.info("Initialized Teemill API client")
 
     async def cleanup(self) -> None:
         """Clean up the HTTP session."""
         if self.session:
             await self.session.close()
             self.session = None
-            logger.info("Closed Printful API client session")
+            logger.info("Closed Teemill API client session")
 
     async def create_product(
         self,
         design_image_url: str,
         product_name: str,
         user_id: str,
-    ) -> PrintfulProduct:
+    ) -> TeemillProduct:
         """
-        Create a new product on Printful with the design.
+        Create a new product order on Teemill with the design.
 
         Args:
             design_image_url: URL or base64 of the design image
@@ -68,133 +68,131 @@ class PrintfulClient:
             user_id: User ID for tracking
 
         Returns:
-            PrintfulProduct with product details and URL
+            TeemillProduct with product details and URL
         """
         if not self.session:
             await self.initialize()
 
         try:
-            # First, upload the design file
-            file_id = await self._upload_design_file(design_image_url)
+            # Upload the design image first
+            image_url = await self._upload_design_image(design_image_url)
 
-            # Create a sync product (product in Printful store)
-            # Using product ID 71 (Unisex Staple T-Shirt | Bella + Canvas 3001)
-            product_id = 71
-            variant_id = 4012  # White, Size M (most common default)
-
-            sync_product = await self._create_sync_product(
-                product_id=product_id,
-                variant_id=variant_id,
-                file_id=file_id,
+            # Create an order with the design
+            # Default to organic cotton t-shirt
+            order = await self._create_order(
                 product_name=product_name,
+                image_url=image_url,
                 external_id=f"discord_{user_id}_{hash(product_name)}",
             )
 
-            logger.info(f"Created Printful product: {sync_product}")
+            logger.info(f"Created Teemill product: {order}")
 
-            return sync_product
+            return order
 
         except Exception as e:
-            logger.error(f"Error creating Printful product: {e}", exc_info=True)
+            logger.error(f"Error creating Teemill product: {e}", exc_info=True)
             raise
 
-    async def _upload_design_file(self, image_data: str) -> int:
+    async def _upload_design_image(self, image_data: str) -> str:
         """
-        Upload a design file to Printful.
+        Upload a design image to Teemill.
 
         Args:
             image_data: Base64 encoded image or URL
 
         Returns:
-            File ID from Printful
+            URL of the uploaded image
         """
         endpoint = f"{self.BASE_URL}/files"
 
+        # If it's already a URL, return it
+        if image_data.startswith("http"):
+            return image_data
+
+        # Otherwise, upload the base64 image
         payload = {
-            "url": image_data if image_data.startswith("http") else None,
-            "file": image_data if not image_data.startswith("http") else None,
-            "type": "default",
+            "file": image_data,
+            "type": "design",
         }
 
         async with self.session.post(endpoint, json=payload) as response:
             response.raise_for_status()
             data = await response.json()
             
-            file_id = data["result"]["id"]
-            logger.info(f"Uploaded design file, ID: {file_id}")
-            return file_id
+            image_url = data.get("url") or data.get("file_url")
+            logger.info(f"Uploaded design image: {image_url}")
+            return image_url
 
-    async def _create_sync_product(
+    async def _create_order(
         self,
-        product_id: int,
-        variant_id: int,
-        file_id: int,
         product_name: str,
+        image_url: str,
         external_id: str,
-    ) -> PrintfulProduct:
+    ) -> TeemillProduct:
         """
-        Create a sync product in Printful.
+        Create an order in Teemill.
 
         Args:
-            product_id: Printful product template ID
-            variant_id: Printful variant ID
-            file_id: Uploaded file ID
             product_name: Name for the product
+            image_url: URL of the design image
             external_id: External reference ID
 
         Returns:
-            PrintfulProduct object
+            TeemillProduct object
         """
-        endpoint = f"{self.BASE_URL}/store/products"
-        params = {"store_id": self.store_id}
+        endpoint = f"{self.BASE_URL}/orders"
 
+        # Default product configuration for organic cotton t-shirt
         payload = {
-            "sync_product": {
-                "name": product_name,
-                "thumbnail": f"https://api.printful.com/files/{file_id}/preview",
-            },
-            "sync_variants": [
+            "products": [
                 {
-                    "variant_id": variant_id,
-                    "retail_price": "29.99",
-                    "files": [
-                        {
-                            "id": file_id,
-                            "type": "default",
+                    "product_code": "OTC01",  # Organic Cotton T-Shirt
+                    "size": "M",
+                    "color": "white",
+                    "quantity": 1,
+                    "print_areas": {
+                        "front": {
+                            "image_url": image_url,
+                            "position": "center",
                         }
-                    ],
+                    },
                 }
             ],
+            "reference": external_id,
+            "metadata": {
+                "product_name": product_name,
+                "created_by": "discord_bot",
+            },
         }
 
-        async with self.session.post(endpoint, json=payload, params=params) as response:
+        async with self.session.post(endpoint, json=payload) as response:
             response.raise_for_status()
             data = await response.json()
 
-            result = data["result"]
-            sync_product = result["sync_product"]
-            sync_variant = result["sync_variants"][0]
+            order_id = data.get("order_id") or data.get("id")
+            product = data.get("products", [{}])[0] if data.get("products") else {}
+            
+            # Generate product URL
+            product_url = data.get("url") or f"https://teemill.com/order/{order_id}"
 
-            # Generate the store URL
-            store_url = f"https://www.printful.com/dashboard/store/products/{sync_product['id']}"
-
-            return PrintfulProduct(
-                product_id=product_id,
-                variant_id=variant_id,
-                sync_product_id=sync_product["id"],
+            return TeemillProduct(
+                order_id=order_id,
+                product_id=product.get("product_id") or product.get("id"),
+                variant_id=product.get("variant_id"),
                 external_id=external_id,
                 name=product_name,
-                thumbnail_url=sync_product.get("thumbnail_url"),
-                retail_price=float(sync_variant.get("retail_price", 0)),
-                currency=sync_variant.get("currency", "USD"),
+                thumbnail_url=product.get("thumbnail_url") or image_url,
+                retail_price=product.get("price", 25.0),
+                currency=product.get("currency", "GBP"),
+                product_url=product_url,
             )
 
-    async def get_product_info(self, sync_product_id: int) -> Dict:
+    async def get_product_info(self, order_id: str) -> Dict:
         """
-        Get product information from Printful.
+        Get order/product information from Teemill.
 
         Args:
-            sync_product_id: The sync product ID
+            order_id: The order ID
 
         Returns:
             Product information dictionary
@@ -202,20 +200,19 @@ class PrintfulClient:
         if not self.session:
             await self.initialize()
 
-        endpoint = f"{self.BASE_URL}/store/products/{sync_product_id}"
-        params = {"store_id": self.store_id}
+        endpoint = f"{self.BASE_URL}/orders/{order_id}"
 
-        async with self.session.get(endpoint, params=params) as response:
+        async with self.session.get(endpoint) as response:
             response.raise_for_status()
             data = await response.json()
-            return data["result"]
+            return data
 
     async def list_products(self, limit: int = 20, offset: int = 0) -> dict:
         """
-        List all products in the Printful store with pagination.
+        List all orders/products with pagination.
 
         Args:
-            limit: Maximum number of products to return (default: 20, max: 100)
+            limit: Maximum number of products to return (default: 20)
             offset: Offset for pagination (default: 0)
 
         Returns:
@@ -224,28 +221,32 @@ class PrintfulClient:
         if not self.session:
             await self.initialize()
 
-        endpoint = f"{self.BASE_URL}/store/products"
-        params = {"store_id": self.store_id, "limit": limit, "offset": offset}
+        endpoint = f"{self.BASE_URL}/orders"
+        params = {"limit": limit, "offset": offset}
 
         try:
             async with self.session.get(endpoint, params=params) as response:
                 if response.status != 200:
                     error_body = await response.text()
                     logger.error(
-                        f"Printful API error (status {response.status}): {error_body}"
+                        f"Teemill API error (status {response.status}): {error_body}"
                     )
-                    # Return empty result for graceful degradation
                     return {"products": [], "paging": {}}
                 
                 data = await response.json()
                 
+                orders = data.get("orders", [])
+                
                 return {
-                    "products": data.get("result", []),
-                    "paging": data.get("paging", {}),
+                    "products": orders,
+                    "paging": {
+                        "total": data.get("total", len(orders)),
+                        "limit": limit,
+                        "offset": offset,
+                    },
                 }
         except Exception as e:
             logger.error(f"Failed to list products: {e}", exc_info=True)
-            # Return empty result for graceful degradation
             return {"products": [], "paging": {}}
 
     async def search_products_by_user(self, user_id: str) -> list:
@@ -265,7 +266,7 @@ class PrintfulClient:
         offset = 0
         limit = 20
 
-        # Fetch all products (Printful doesn't have user-based filtering)
+        # Fetch all products and filter by user
         while True:
             result = await self.list_products(limit=limit, offset=offset)
             products = result["products"]
@@ -273,16 +274,17 @@ class PrintfulClient:
             if not products:
                 break
 
-            # Filter products by external_id containing user_id
+            # Filter products by reference containing user_id
             user_products = [
                 p for p in products
-                if p.get("external_id") and user_id in p.get("external_id", "")
+                if p.get("reference") and user_id in p.get("reference", "")
             ]
             all_products.extend(user_products)
 
             # Check if there are more products
             paging = result.get("paging", {})
-            if not paging.get("next"):
+            total = paging.get("total", 0)
+            if offset + limit >= total:
                 break
 
             offset += limit
@@ -315,7 +317,8 @@ class PrintfulClient:
 
             # Check if there are more products
             paging = result.get("paging", {})
-            if not paging.get("next"):
+            total = paging.get("total", 0)
+            if offset + limit >= total:
                 break
 
             offset += limit
@@ -332,13 +335,13 @@ class PrintfulClient:
         """
         products = await self.get_all_designs()
 
-        # Extract user IDs from external_ids
+        # Extract user IDs from references
         user_ids = set()
         for product in products:
-            external_id = product.get("external_id", "")
-            if "discord_" in external_id:
+            reference = product.get("reference", "")
+            if "discord_" in reference:
                 # Extract user_id from format: discord_userid_hash
-                parts = external_id.split("_")
+                parts = reference.split("_")
                 if len(parts) >= 2:
                     user_ids.add(parts[1])
 

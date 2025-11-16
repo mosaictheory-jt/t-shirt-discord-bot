@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.services.printful_client import PrintfulClient
+from src.services.teemill_client import TeemillClient
 from src.services.orchestrator import TShirtOrchestrator
 
 
@@ -12,8 +12,8 @@ class TestDesignTracking:
 
     @pytest.fixture
     def client(self):
-        """Create a Printful client instance."""
-        return PrintfulClient()
+        """Create a Teemill client instance."""
+        return TeemillClient()
 
     @pytest.fixture
     def orchestrator(self):
@@ -28,11 +28,11 @@ class TestDesignTracking:
         mock_response = AsyncMock()
         mock_response.raise_for_status = MagicMock()
         mock_response.json = AsyncMock(return_value={
-            "result": [
-                {"id": 1, "name": "Product 1"},
-                {"id": 2, "name": "Product 2"},
+            "orders": [
+                {"id": "order_1", "order_id": "order_1", "metadata": {"product_name": "Product 1"}},
+                {"id": "order_2", "order_id": "order_2", "metadata": {"product_name": "Product 2"}},
             ],
-            "paging": {"next": None}
+            "total": 2
         })
         mock_response.__aenter__.return_value = mock_response
         mock_response.__aexit__.return_value = AsyncMock()
@@ -54,12 +54,12 @@ class TestDesignTracking:
         mock_response = AsyncMock()
         mock_response.raise_for_status = MagicMock()
         mock_response.json = AsyncMock(return_value={
-            "result": [
-                {"id": 1, "name": "Product 1", "external_id": "discord_123_456"},
-                {"id": 2, "name": "Product 2", "external_id": "discord_789_012"},
-                {"id": 3, "name": "Product 3", "external_id": "discord_123_789"},
+            "orders": [
+                {"id": "order_1", "reference": "discord_123_456", "metadata": {"product_name": "Product 1"}},
+                {"id": "order_2", "reference": "discord_789_012", "metadata": {"product_name": "Product 2"}},
+                {"id": "order_3", "reference": "discord_123_789", "metadata": {"product_name": "Product 3"}},
             ],
-            "paging": {"next": None}
+            "total": 3
         })
         mock_response.__aenter__.return_value = mock_response
         mock_response.__aexit__.return_value = AsyncMock()
@@ -68,7 +68,7 @@ class TestDesignTracking:
             designs = await client.search_products_by_user("123")
 
             assert len(designs) == 2  # Only products with user_id 123
-            assert all("123" in d["external_id"] for d in designs)
+            assert all("123" in d["reference"] for d in designs)
 
         await client.cleanup()
 
@@ -81,11 +81,11 @@ class TestDesignTracking:
         mock_response_1 = AsyncMock()
         mock_response_1.raise_for_status = MagicMock()
         mock_response_1.json = AsyncMock(return_value={
-            "result": [
-                {"id": 1, "name": "Product 1"},
-                {"id": 2, "name": "Product 2"},
+            "orders": [
+                {"id": "order_1", "order_id": "order_1"},
+                {"id": "order_2", "order_id": "order_2"},
             ],
-            "paging": {"next": "next_url"}
+            "total": 3
         })
         mock_response_1.__aenter__.return_value = mock_response_1
         mock_response_1.__aexit__.return_value = AsyncMock()
@@ -93,10 +93,10 @@ class TestDesignTracking:
         mock_response_2 = AsyncMock()
         mock_response_2.raise_for_status = MagicMock()
         mock_response_2.json = AsyncMock(return_value={
-            "result": [
-                {"id": 3, "name": "Product 3"},
+            "orders": [
+                {"id": "order_3", "order_id": "order_3"},
             ],
-            "paging": {"next": None}
+            "total": 3
         })
         mock_response_2.__aenter__.return_value = mock_response_2
         mock_response_2.__aexit__.return_value = AsyncMock()
@@ -109,8 +109,8 @@ class TestDesignTracking:
             designs = await client.get_all_designs()
 
             assert len(designs) == 3
-            assert designs[0]["id"] == 1
-            assert designs[2]["id"] == 3
+            assert designs[0]["id"] == "order_1"
+            assert designs[2]["id"] == "order_3"
 
         await client.cleanup()
 
@@ -122,12 +122,12 @@ class TestDesignTracking:
         mock_response = AsyncMock()
         mock_response.raise_for_status = MagicMock()
         mock_response.json = AsyncMock(return_value={
-            "result": [
-                {"id": 1, "name": "Product 1", "external_id": "discord_123_456"},
-                {"id": 2, "name": "Product 2", "external_id": "discord_789_012"},
-                {"id": 3, "name": "Product 3", "external_id": "discord_123_789"},
+            "orders": [
+                {"id": "order_1", "reference": "discord_123_456"},
+                {"id": "order_2", "reference": "discord_789_012"},
+                {"id": "order_3", "reference": "discord_123_789"},
             ],
-            "paging": {"next": None}
+            "total": 3
         })
         mock_response.__aenter__.return_value = mock_response
         mock_response.__aexit__.return_value = AsyncMock()
@@ -151,7 +151,7 @@ class TestDesignTracking:
         ]
 
         with patch.object(
-            orchestrator.printful_client,
+            orchestrator.teemill_client,
             'search_products_by_user',
             new_callable=AsyncMock,
             return_value=mock_designs,
@@ -172,7 +172,7 @@ class TestDesignTracking:
         }
 
         with patch.object(
-            orchestrator.printful_client,
+            orchestrator.teemill_client,
             'get_design_stats',
             new_callable=AsyncMock,
             return_value=mock_stats,
@@ -193,7 +193,7 @@ class TestDesignTracking:
         ]
 
         with patch.object(
-            orchestrator.printful_client,
+            orchestrator.teemill_client,
             'get_all_designs',
             new_callable=AsyncMock,
             return_value=mock_designs,
@@ -210,8 +210,8 @@ class TestDesignTracking:
         mock_response = AsyncMock()
         mock_response.raise_for_status = MagicMock()
         mock_response.json = AsyncMock(return_value={
-            "result": [],
-            "paging": {"next": None}
+            "orders": [],
+            "total": 0
         })
         mock_response.__aenter__.return_value = mock_response
         mock_response.__aexit__.return_value = AsyncMock()
@@ -231,8 +231,8 @@ class TestDesignTracking:
         mock_response = AsyncMock()
         mock_response.raise_for_status = MagicMock()
         mock_response.json = AsyncMock(return_value={
-            "result": [],
-            "paging": {"next": None}
+            "orders": [],
+            "total": 0
         })
         mock_response.__aenter__.return_value = mock_response
         mock_response.__aexit__.return_value = AsyncMock()

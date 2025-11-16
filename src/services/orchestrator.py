@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from src.services.design_generator import DesignGenerator
 from src.services.llm_parser import LLMParser
-from src.services.printful_client import PrintfulClient
+from src.services.teemill_client import TeemillClient
 
 logger = logging.getLogger(__name__)
 
@@ -46,16 +46,16 @@ class TShirtOrchestrator:
         """Initialize the orchestrator with all services."""
         self.llm_parser = LLMParser()
         self.design_generator = DesignGenerator()
-        self.printful_client = PrintfulClient()
+        self.teemill_client = TeemillClient()
 
     async def initialize(self) -> None:
         """Initialize all services."""
-        await self.printful_client.initialize()
+        await self.teemill_client.initialize()
         logger.info("Orchestrator initialized")
 
     async def cleanup(self) -> None:
         """Clean up all services."""
-        await self.printful_client.cleanup()
+        await self.teemill_client.cleanup()
         logger.info("Orchestrator cleaned up")
 
     async def get_user_designs(self, user_id: str) -> list:
@@ -69,7 +69,7 @@ class TShirtOrchestrator:
             List of designs created by the user
         """
         try:
-            designs = await self.printful_client.search_products_by_user(user_id)
+            designs = await self.teemill_client.search_products_by_user(user_id)
             logger.info(f"Retrieved {len(designs)} designs for user {user_id}")
             return designs
         except Exception as e:
@@ -84,7 +84,7 @@ class TShirtOrchestrator:
             Dictionary with design statistics
         """
         try:
-            stats = await self.printful_client.get_design_stats()
+            stats = await self.teemill_client.get_design_stats()
             logger.info(f"Design stats: {stats['total_designs']} total designs")
             return stats
         except Exception as e:
@@ -104,7 +104,7 @@ class TShirtOrchestrator:
             List of all designs
         """
         try:
-            designs = await self.printful_client.get_all_designs()
+            designs = await self.teemill_client.get_all_designs()
             logger.info(f"Retrieved {len(designs)} total designs")
             return designs
         except Exception as e:
@@ -150,25 +150,20 @@ class TShirtOrchestrator:
 
             logger.info(f"Generated design at {design_path}")
 
-            # Step 3: Upload to Printful and create product
+            # Step 3: Upload to Teemill and create product
             # Convert image to base64 for upload
             design_base64 = base64.b64encode(design_bytes).decode("utf-8")
 
-            product = await self.printful_client.create_product(
+            product = await self.teemill_client.create_product(
                 design_image_url=f"data:image/png;base64,{design_base64}",
                 product_name=f"{request.phrase[:50]} - Custom Tee",
                 user_id=user_id,
             )
 
-            logger.info(f"Created Printful product: {product.sync_product_id}")
+            logger.info(f"Created Teemill product: {product.order_id}")
 
-            # Generate product URL
-            # Note: For actual storefront, you'd want to set up a Printful store
-            # and get the public product URL. For now, we'll use the dashboard URL
-            product_url = (
-                f"https://www.printful.com/dashboard/store/products/"
-                f"{product.sync_product_id}"
-            )
+            # Use the product URL from Teemill
+            product_url = product.product_url or f"https://teemill.com/order/{product.order_id}"
 
             # Step 4: Return success with a fun phrase
             response_phrase = random.choice(self.RESPONSE_PHRASES)

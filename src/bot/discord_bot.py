@@ -136,10 +136,11 @@ class TShirtBot(commands.Bot):
                 response = f"**Your Design History** ({len(designs)} design{'s' if len(designs) != 1 else ''}):\n\n"
                 
                 for i, design in enumerate(designs[:10], 1):  # Limit to 10 most recent
-                    name = design.get("name", "Unnamed Design")
-                    sync_id = design.get("id", "")
+                    name = design.get("metadata", {}).get("product_name", design.get("name", "Unnamed Design"))
+                    order_id = design.get("order_id") or design.get("id", "")
+                    product_url = design.get("url") or f"https://teemill.com/order/{order_id}"
                     response += f"{i}. {name}\n"
-                    response += f"   🔗 View: https://www.printful.com/dashboard/store/products/{sync_id}\n\n"
+                    response += f"   🔗 View: {product_url}\n\n"
 
                 if len(designs) > 10:
                     response += f"\n_Showing 10 of {len(designs)} designs_"

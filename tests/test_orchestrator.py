@@ -6,7 +6,7 @@ from pathlib import Path
 
 from src.services.orchestrator import TShirtOrchestrator, TShirtResult
 from src.services.llm_parser import TShirtRequest
-from src.services.printful_client import PrintfulProduct
+from src.services.teemill_client import TeemillProduct
 
 
 class TestTShirtOrchestrator:
@@ -30,29 +30,30 @@ class TestTShirtOrchestrator:
 
     @pytest.fixture
     def sample_product(self):
-        """Create a sample PrintfulProduct."""
-        return PrintfulProduct(
-            product_id=71,
-            variant_id=4012,
-            sync_product_id=12345,
+        """Create a sample TeemillProduct."""
+        return TeemillProduct(
+            order_id="order_12345",
+            product_id="prod_456",
+            variant_id="var_789",
             external_id="test_123",
             name="Test Product",
             thumbnail_url="https://example.com/thumb.jpg",
             retail_price=29.99,
-            currency="USD",
+            currency="GBP",
+            product_url="https://teemill.com/order/order_12345",
         )
 
     @pytest.mark.asyncio
     async def test_initialize(self, orchestrator):
         """Test orchestrator initialization."""
-        with patch.object(orchestrator.printful_client, 'initialize', new_callable=AsyncMock) as mock_init:
+        with patch.object(orchestrator.teemill_client, 'initialize', new_callable=AsyncMock) as mock_init:
             await orchestrator.initialize()
             mock_init.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_cleanup(self, orchestrator):
         """Test orchestrator cleanup."""
-        with patch.object(orchestrator.printful_client, 'cleanup', new_callable=AsyncMock) as mock_cleanup:
+        with patch.object(orchestrator.teemill_client, 'cleanup', new_callable=AsyncMock) as mock_cleanup:
             await orchestrator.cleanup()
             mock_cleanup.assert_called_once()
 
@@ -78,9 +79,9 @@ class TestTShirtOrchestrator:
                 new_callable=AsyncMock,
                 return_value=(Path("/tmp/test.png"), b"fake_image_data"),
             ):
-                # Mock the Printful client
+                # Mock the Teemill client
                 with patch.object(
-                    orchestrator.printful_client,
+                    orchestrator.teemill_client,
                     'create_product',
                     new_callable=AsyncMock,
                     return_value=sample_product,
@@ -93,7 +94,7 @@ class TestTShirtOrchestrator:
 
         assert result.success is True
         assert result.product_url is not None
-        assert "12345" in result.product_url
+        assert "order_12345" in result.product_url
         assert result.response_phrase in TShirtOrchestrator.RESPONSE_PHRASES
         assert result.phrase == "Hello World"
         assert result.error_message is None
@@ -147,12 +148,12 @@ class TestTShirtOrchestrator:
         assert result.product_url is None
 
     @pytest.mark.asyncio
-    async def test_process_tshirt_request_printful_failure(
+    async def test_process_tshirt_request_teemill_failure(
         self,
         orchestrator,
         sample_request,
     ):
-        """Test request processing when Printful API fails."""
+        """Test request processing when Teemill API fails."""
         with patch.object(
             orchestrator.llm_parser,
             'parse_message',
@@ -166,10 +167,10 @@ class TestTShirtOrchestrator:
                 return_value=(Path("/tmp/test.png"), b"fake_data"),
             ):
                 with patch.object(
-                    orchestrator.printful_client,
+                    orchestrator.teemill_client,
                     'create_product',
                     new_callable=AsyncMock,
-                    side_effect=Exception("Printful API error"),
+                    side_effect=Exception("Teemill API error"),
                 ):
                     result = await orchestrator.process_tshirt_request(
                         message="test message",
@@ -178,7 +179,7 @@ class TestTShirtOrchestrator:
                     )
 
         assert result.success is False
-        assert "Printful API error" in result.error_message
+        assert "Teemill API error" in result.error_message
         assert result.product_url is None
 
     def test_response_phrases_not_empty(self, orchestrator):
