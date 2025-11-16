@@ -59,15 +59,6 @@ class TestMyFeature:
         assert result == expected
 ```
 
-## GitHub Actions
-
-Tests run automatically on:
-- Push to `main` or `develop`
-- Pull requests
-- Manual workflow dispatch
-
-View results: Repository → Actions tab
-
 ## Full Documentation
 
 See **[docs/TESTING.md](docs/TESTING.md)** for complete testing guide.

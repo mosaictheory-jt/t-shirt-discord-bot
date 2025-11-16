@@ -49,7 +49,6 @@ Get your API keys:
 - **[Architecture](docs/ARCHITECTURE.md)** - System design and components
 - **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
 - **[Testing Guide](docs/TESTING.md)** - Testing and development
-- **[GitHub Actions](docs/GITHUB_ACTIONS.md)** - CI/CD pipeline setup
 - **[Contributing](docs/CONTRIBUTING.md)** - How to contribute
 
 ## 🔧 How It Works
@@ -224,16 +223,22 @@ ruff check src/ tests/
 ruff check --fix src/ tests/
 ```
 
-### GitHub Actions
+### Continuous Integration
 
-This project uses GitHub Actions for CI/CD:
+Run code quality checks locally:
 
-- ✅ **Automated Testing** - Runs on every push and PR
-- ✅ **Code Quality Checks** - Linting and formatting
-- ✅ **Security Scanning** - Vulnerability detection
-- ✅ **Automated Deployment** - Deploy to Cloud Run on merge to main
+```bash
+# Format code
+black src/ tests/
 
-See **[GitHub Actions Guide](docs/GITHUB_ACTIONS.md)** for setup and configuration.
+# Lint code
+ruff check src/ tests/
+
+# Run tests
+pytest --cov=src
+```
+
+For automated deployment, this project uses **Google Cloud Build** (see `cloudbuild.yaml`).
 
 ## 🤝 Contributing
 
