@@ -5,9 +5,8 @@ import pytest
 from pathlib import Path
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_environment():
-    """Set up test environment variables."""
+def pytest_configure(config):
+    """Set up test environment variables before any tests run."""
     os.environ["DISCORD_BOT_TOKEN"] = "test_discord_token"
     os.environ["GOOGLE_API_KEY"] = "test_google_key"
     os.environ["PRINTFUL_API_KEY"] = "test_printful_key"

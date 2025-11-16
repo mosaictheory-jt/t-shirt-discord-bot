@@ -43,6 +43,8 @@ class TestPrintfulClient:
         mock_response.json = AsyncMock(return_value={
             "result": {"id": 12345}
         })
+        mock_response.__aenter__.return_value = mock_response
+        mock_response.__aexit__.return_value = AsyncMock()
         
         with patch.object(client.session, 'post', return_value=mock_response):
             file_id = await client._upload_design_file("data:image/png;base64,abc123")
@@ -72,6 +74,8 @@ class TestPrintfulClient:
                 }]
             }
         })
+        mock_response.__aenter__.return_value = mock_response
+        mock_response.__aexit__.return_value = AsyncMock()
         
         with patch.object(client.session, 'post', return_value=mock_response):
             product = await client._create_sync_product(
@@ -100,6 +104,8 @@ class TestPrintfulClient:
         upload_response.json = AsyncMock(return_value={
             "result": {"id": 12345}
         })
+        upload_response.__aenter__.return_value = upload_response
+        upload_response.__aexit__.return_value = AsyncMock()
         
         # Mock sync product response
         sync_response = AsyncMock()
@@ -118,6 +124,8 @@ class TestPrintfulClient:
                 }]
             }
         })
+        sync_response.__aenter__.return_value = sync_response
+        sync_response.__aexit__.return_value = AsyncMock()
         
         with patch.object(client.session, 'post', side_effect=[upload_response, sync_response]):
             product = await client.create_product(
@@ -148,6 +156,8 @@ class TestPrintfulClient:
                 }
             }
         })
+        mock_response.__aenter__.return_value = mock_response
+        mock_response.__aexit__.return_value = AsyncMock()
         
         with patch.object(client.session, 'get', return_value=mock_response):
             info = await client.get_product_info(12345)
@@ -170,12 +180,15 @@ class TestPrintfulClient:
                 {"id": 2, "name": "Product 2"}
             ]
         })
+        mock_response.__aenter__.return_value = mock_response
+        mock_response.__aexit__.return_value = AsyncMock()
         
         with patch.object(client.session, 'get', return_value=mock_response):
-            products = await client.list_products()
+            result = await client.list_products()
             
-            assert len(products) == 2
-            assert products[0]["id"] == 1
-            assert products[1]["name"] == "Product 2"
+            assert "products" in result
+            assert len(result["products"]) == 2
+            assert result["products"][0]["id"] == 1
+            assert result["products"][1]["name"] == "Product 2"
         
         await client.cleanup()
