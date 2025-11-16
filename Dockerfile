@@ -1,5 +1,5 @@
-# Use Python 3.11 slim image
-FROM python:3.14-slim
+# Use official UV image which includes Python
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 
 # Set working directory
 WORKDIR /app
@@ -8,12 +8,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
-    curl \
     && rm -rf /var/lib/apt/lists/*
-
-# Install UV package manager
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Copy dependency files
 COPY pyproject.toml ./
