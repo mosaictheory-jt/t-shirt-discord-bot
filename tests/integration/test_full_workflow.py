@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 from pathlib import Path
 
 from src.services.orchestrator import TShirtOrchestrator
-from src.services.teemill_client import TeemillProduct
+from src.services.prodigi_client import ProdigiProduct
 
 
 @pytest.mark.integration
@@ -20,26 +20,27 @@ class TestFullWorkflow:
     @pytest.mark.asyncio
     async def test_complete_workflow_mock_apis(self, orchestrator):
         """Test complete workflow with mocked external APIs."""
-        # Mock Teemill client
-        mock_product = TeemillProduct(
-            order_id="order_99999",
-            product_id="prod_123",
-            variant_id="var_456",
+        # Mock Prodigi client
+        mock_product = ProdigiProduct(
+            order_id="ord_99999",
+            product_id="itm_123",
+            sku="GLOBAL-TSHU-CLAS-MENS-MEDI-WHIT",
             external_id="test_integration",
             name="Integration Test Product",
-            thumbnail_url="https://example.com/thumb.jpg",
-            retail_price=29.99,
-            currency="GBP",
-            product_url="https://teemill.com/order/order_99999",
+            thumbnail_url=None,
+            retail_price=15.0,
+            currency="USD",
+            product_url="https://dashboard.prodigi.com/orders/ord_99999",
+            status="InProgress",
         )
 
         with patch.object(
-            orchestrator.teemill_client,
+            orchestrator.prodigi_client,
             'initialize',
             new_callable=AsyncMock,
         ):
             with patch.object(
-                orchestrator.teemill_client,
+                orchestrator.prodigi_client,
                 'create_product',
                 new_callable=AsyncMock,
                 return_value=mock_product,
@@ -57,7 +58,7 @@ class TestFullWorkflow:
                 # Verify success
                 assert result.success is True
                 assert result.product_url is not None
-                assert "order_99999" in result.product_url
+                assert "ord_99999" in result.product_url
                 assert result.response_phrase is not None
                 assert result.error_message is None
 
@@ -67,25 +68,26 @@ class TestFullWorkflow:
     @pytest.mark.asyncio
     async def test_workflow_with_simple_phrase(self, orchestrator):
         """Test workflow with a simple phrase."""
-        mock_product = TeemillProduct(
-            order_id="order_88888",
-            product_id="prod_888",
-            variant_id="var_888",
+        mock_product = ProdigiProduct(
+            order_id="ord_88888",
+            product_id="itm_888",
+            sku="GLOBAL-TSHU-CLAS-MENS-MEDI-WHIT",
             external_id="test_simple",
             name="Simple Test",
-            thumbnail_url="https://example.com/thumb.jpg",
-            retail_price=29.99,
-            currency="GBP",
-            product_url="https://teemill.com/order/order_88888",
+            thumbnail_url=None,
+            retail_price=15.0,
+            currency="USD",
+            product_url="https://dashboard.prodigi.com/orders/ord_88888",
+            status="InProgress",
         )
 
         with patch.object(
-            orchestrator.teemill_client,
+            orchestrator.prodigi_client,
             'initialize',
             new_callable=AsyncMock,
         ):
             with patch.object(
-                orchestrator.teemill_client,
+                orchestrator.prodigi_client,
                 'create_product',
                 new_callable=AsyncMock,
                 return_value=mock_product,
@@ -106,25 +108,26 @@ class TestFullWorkflow:
     @pytest.mark.asyncio
     async def test_workflow_with_complex_request(self, orchestrator):
         """Test workflow with complex multi-part request."""
-        mock_product = TeemillProduct(
-            order_id="order_77777",
-            product_id="prod_777",
-            variant_id="var_777",
+        mock_product = ProdigiProduct(
+            order_id="ord_77777",
+            product_id="itm_777",
+            sku="GLOBAL-TSHU-CLAS-MENS-MEDI-WHIT",
             external_id="test_complex",
             name="Complex Test",
-            thumbnail_url="https://example.com/thumb.jpg",
-            retail_price=29.99,
-            currency="GBP",
-            product_url="https://teemill.com/order/order_77777",
+            thumbnail_url=None,
+            retail_price=15.0,
+            currency="USD",
+            product_url="https://dashboard.prodigi.com/orders/ord_77777",
+            status="InProgress",
         )
 
         with patch.object(
-            orchestrator.teemill_client,
+            orchestrator.prodigi_client,
             'initialize',
             new_callable=AsyncMock,
         ):
             with patch.object(
-                orchestrator.teemill_client,
+                orchestrator.prodigi_client,
                 'create_product',
                 new_callable=AsyncMock,
                 return_value=mock_product,
@@ -150,14 +153,14 @@ class TestFullWorkflow:
     @pytest.mark.asyncio
     async def test_error_recovery(self, orchestrator):
         """Test that system handles errors gracefully."""
-        # Simulate Teemill API failure
+        # Simulate Prodigi API failure
         with patch.object(
-            orchestrator.teemill_client,
+            orchestrator.prodigi_client,
             'initialize',
             new_callable=AsyncMock,
         ):
             with patch.object(
-                orchestrator.teemill_client,
+                orchestrator.prodigi_client,
                 'create_product',
                 new_callable=AsyncMock,
                 side_effect=Exception("API Timeout"),

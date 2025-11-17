@@ -7,7 +7,7 @@ The Discord T-Shirt Bot is a Python-based application that automatically creates
 1. **Discord Bot** - Monitors messages and responds to users
 2. **Gemini LLM** - Parses user messages to extract design details
 3. **Design Generator** - Creates t-shirt design images
-4. **Printful API** - Handles product creation and fulfillment
+4. **Prodigi Print API** - Handles product creation and fulfillment
 
 ## System Architecture
 
@@ -34,13 +34,13 @@ The Discord T-Shirt Bot is a Python-based application that automatically creates
      │        │        │
      ▼        ▼        ▼
 ┌─────────┐ ┌─────────┐ ┌──────────────┐
-│   LLM   │ │ Design  │ │   Printful   │
+│   LLM   │ │ Design  │ │   Prodigi    │
 │ Parser  │ │Generator│ │    Client    │
 └─────────┘ └─────────┘ └──────────────┘
      │            │             │
      ▼            ▼             ▼
 ┌─────────┐ ┌─────────┐ ┌──────────────┐
-│ Gemini  │ │  PIL/   │ │   Printful   │
+│ Gemini  │ │  PIL/   │ │   Prodigi    │
 │   API   │ │ Pillow  │ │     API      │
 └─────────┘ └─────────┘ └──────────────┘
                                │
@@ -136,31 +136,33 @@ TShirtRequest(
 - Color customization
 - Style-specific effects
 
-### 4. Printful Client (`src/services/printful_client.py`)
+### 4. Prodigi Client (`src/services/prodigi_client.py`)
 
 **Responsibilities:**
-- Upload design images to Printful
-- Create sync products
-- Configure variants (sizes, colors)
-- Generate product URLs
+- Upload design images to Prodigi
+- Create print-on-demand orders
+- Configure products (sizes, colors, SKUs)
+- Generate order URLs
 - Handle API errors
 
 **Workflow:**
-1. Upload design image to Printful Files API
-2. Create a sync product with the design
-3. Configure variant (t-shirt type, size, price)
-4. Return product URL for purchase
+1. Prepare design image (URL or base64)
+2. Create an order with the design via Prodigi API
+3. Configure product (t-shirt type, size, shipping)
+4. Return order URL for tracking
 
 **Technology:**
 - `aiohttp` - Async HTTP client
-- Printful REST API v1
+- Prodigi Print API v4.0
 - Base64 encoding for image upload
+- X-API-Key authentication
 
 **Product Details:**
-- Default Product: Bella + Canvas 3001 (Unisex Staple T-Shirt)
+- Default Product: Classic Unisex T-Shirt (SKU: GLOBAL-TSHU-CLAS-MENS-MEDI-WHIT)
 - Default Size: Medium
 - Default Color: White
-- Retail Price: $29.99
+- Shipping: Budget (default)
+- Currency: USD
 
 ### 5. Orchestrator (`src/services/orchestrator.py`)
 
@@ -175,8 +177,8 @@ TShirtRequest(
 1. Receive message from Discord bot
 2. Parse message with LLM
 3. Generate design image
-4. Upload to Printful and create product
-5. Return product URL to Discord bot
+4. Upload to Prodigi and create order
+5. Return order URL to Discord bot
 
 **Features:**
 - Async/await for concurrent operations
@@ -194,9 +196,9 @@ TShirtRequest(
 4. Orchestrator invokes LLM parser
 5. Gemini extracts: phrase="Coffee First", style="modern"
 6. Design generator creates PNG image with text
-7. Image uploaded to Printful as base64
-8. Printful creates sync product
-9. Product URL returned to orchestrator
+7. Image uploaded to Prodigi as base64
+8. Prodigi creates print-on-demand order
+9. Order URL returned to orchestrator
 10. Orchestrator selects fun response phrase
 11. Bot replies: "Got you fam! 🔥 Check out your custom tee: [URL]"
 
@@ -216,7 +218,7 @@ All configuration is managed through environment variables (see `src/config.py`)
 
 - **Discord**: Bot token, guild IDs
 - **Google**: API key for Gemini
-- **Printful**: API key
+- **Prodigi**: API key
 - **Langsmith**: API key, project name (optional)
 - **Bot**: Trigger keywords, log level
 
@@ -304,7 +306,7 @@ All configuration is managed through environment variables (see `src/config.py`)
 - Message detection: < 100ms
 - LLM parsing: 1-3 seconds
 - Image generation: 1-2 seconds
-- Printful upload/creation: 3-5 seconds
+- Prodigi upload/creation: 3-5 seconds
 - **Total**: ~5-10 seconds per request
 
 ### Resource Usage
@@ -331,7 +333,7 @@ All configuration is managed through environment variables (see `src/config.py`)
 - Success/failure rate
 - LLM parsing accuracy
 - Average response time
-- Printful API errors
+- Prodigi API errors
 - Bot uptime
 
 ## Future Enhancements
@@ -345,4 +347,4 @@ All configuration is managed through environment variables (see `src/config.py`)
 7. **Multi-language**: Support multiple languages
 8. **Custom Fonts**: Allow users to specify fonts
 9. **Design Preview**: Show design before ordering
-10. **Webhook Integration**: Printful webhooks for order updates
+10. **Webhook Integration**: Prodigi webhooks for order updates

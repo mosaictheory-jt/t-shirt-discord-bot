@@ -9,7 +9,7 @@ def pytest_configure(config):
     """Set up test environment variables before any tests run."""
     os.environ["DISCORD_BOT_TOKEN"] = "test_discord_token"
     os.environ["GOOGLE_API_KEY"] = "test_google_key"
-    os.environ["TEEMILL_API_KEY"] = "test_teemill_key"
+    os.environ["PRODIGI_API_KEY"] = "test_prodigi_key"
     os.environ["LANGCHAIN_API_KEY"] = "test_langchain_key"
     os.environ["LANGCHAIN_TRACING_V2"] = "false"
     os.environ["BOT_LOG_LEVEL"] = "ERROR"

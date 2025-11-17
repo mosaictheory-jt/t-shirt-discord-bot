@@ -1,4 +1,4 @@
-"""Teemill API client for creating and managing t-shirt products."""
+"""Prodigi Print API client for creating and managing print-on-demand products."""
 
 import logging
 from typing import Dict, Optional, List
@@ -11,28 +11,29 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 
-class TeemillProduct(BaseModel):
-    """Teemill product information."""
+class ProdigiProduct(BaseModel):
+    """Prodigi product information."""
 
     order_id: Optional[str] = None
     product_id: Optional[str] = None
-    variant_id: Optional[str] = None
+    sku: Optional[str] = None
     external_id: Optional[str] = None
     name: str
     thumbnail_url: Optional[str] = None
     retail_price: Optional[float] = None
-    currency: str = "GBP"
+    currency: str = "USD"
     product_url: Optional[str] = None
+    status: Optional[str] = None
 
 
-class TeemillClient:
-    """Client for interacting with the Teemill API."""
+class ProdigiClient:
+    """Client for interacting with the Prodigi Print API."""
 
-    BASE_URL = "https://api.teemill.com/v1"
+    BASE_URL = "https://api.prodigi.com/v4.0"
 
     def __init__(self):
-        """Initialize the Teemill client."""
-        self.api_key = settings.teemill_api_key
+        """Initialize the Prodigi client."""
+        self.api_key = settings.prodigi_api_key
         self.session: Optional[aiohttp.ClientSession] = None
 
     async def initialize(self) -> None:
@@ -40,27 +41,27 @@ class TeemillClient:
         if not self.session:
             self.session = aiohttp.ClientSession(
                 headers={
-                    "Authorization": f"Bearer {self.api_key}",
+                    "X-API-Key": self.api_key,
                     "Content-Type": "application/json",
                 }
             )
-            logger.info("Initialized Teemill API client")
+            logger.info("Initialized Prodigi API client")
 
     async def cleanup(self) -> None:
         """Clean up the HTTP session."""
         if self.session:
             await self.session.close()
             self.session = None
-            logger.info("Closed Teemill API client session")
+            logger.info("Closed Prodigi API client session")
 
     async def create_product(
         self,
         design_image_url: str,
         product_name: str,
         user_id: str,
-    ) -> TeemillProduct:
+    ) -> ProdigiProduct:
         """
-        Create a new product order on Teemill with the design.
+        Create a new product order on Prodigi with the design.
 
         Args:
             design_image_url: URL or base64 of the design image
@@ -68,128 +69,141 @@ class TeemillClient:
             user_id: User ID for tracking
 
         Returns:
-            TeemillProduct with product details and URL
+            ProdigiProduct with product details and URL
         """
         if not self.session:
             await self.initialize()
 
         try:
-            # Upload the design image first
+            # Upload the design image first if needed
             image_url = await self._upload_design_image(design_image_url)
 
             # Create an order with the design
-            # Default to organic cotton t-shirt
+            # Default to unisex t-shirt (SKU: GLOBAL-TSHU-CLAS-MENS)
             order = await self._create_order(
                 product_name=product_name,
                 image_url=image_url,
                 external_id=f"discord_{user_id}_{hash(product_name)}",
             )
 
-            logger.info(f"Created Teemill product: {order}")
+            logger.info(f"Created Prodigi product: {order}")
 
             return order
 
         except Exception as e:
-            logger.error(f"Error creating Teemill product: {e}", exc_info=True)
+            logger.error(f"Error creating Prodigi product: {e}", exc_info=True)
             raise
 
     async def _upload_design_image(self, image_data: str) -> str:
         """
-        Upload a design image to Teemill.
+        Upload a design image to Prodigi or return URL.
 
         Args:
             image_data: Base64 encoded image or URL
 
         Returns:
-            URL of the uploaded image
+            URL of the image
         """
-        endpoint = f"{self.BASE_URL}/files"
-
         # If it's already a URL, return it
         if image_data.startswith("http"):
             return image_data
 
-        # Otherwise, upload the base64 image
-        payload = {
-            "file": image_data,
-            "type": "design",
-        }
-
-        async with self.session.post(endpoint, json=payload) as response:
-            response.raise_for_status()
-            data = await response.json()
-            
-            image_url = data.get("url") or data.get("file_url")
-            logger.info(f"Uploaded design image: {image_url}")
-            return image_url
+        # For base64 images, Prodigi accepts them directly in the order
+        # We'll return the data as-is and handle it in the order creation
+        return image_data
 
     async def _create_order(
         self,
         product_name: str,
         image_url: str,
         external_id: str,
-    ) -> TeemillProduct:
+    ) -> ProdigiProduct:
         """
-        Create an order in Teemill.
+        Create an order in Prodigi.
 
         Args:
             product_name: Name for the product
-            image_url: URL of the design image
+            image_url: URL or base64 of the design image
             external_id: External reference ID
 
         Returns:
-            TeemillProduct object
+            ProdigiProduct object
         """
-        endpoint = f"{self.BASE_URL}/orders"
+        endpoint = f"{self.BASE_URL}/Orders"
 
-        # Default product configuration for organic cotton t-shirt
+        # Default product configuration for unisex t-shirt
+        # Using standard Prodigi SKU for classic unisex t-shirt
         payload = {
-            "products": [
+            "merchantReference": external_id,
+            "shippingMethod": "Budget",
+            "idempotencyKey": external_id,
+            "recipient": {
+                "name": "Print on Demand",
+                "email": "noreply@example.com",
+                "address": {
+                    "line1": "14 Tottenham Court Road",
+                    "line2": "",
+                    "postalOrZipCode": "W1T 1JY",
+                    "countryCode": "GB",
+                    "townOrCity": "London"
+                }
+            },
+            "items": [
                 {
-                    "product_code": "OTC01",  # Organic Cotton T-Shirt
-                    "size": "M",
-                    "color": "white",
-                    "quantity": 1,
-                    "print_areas": {
-                        "front": {
-                            "image_url": image_url,
-                            "position": "center",
-                        }
+                    "merchantReference": external_id,
+                    "sku": "GLOBAL-TSHU-CLAS-MENS-MEDI-WHIT",  # Classic unisex white t-shirt, medium
+                    "copies": 1,
+                    "sizing": "fillPrintArea",
+                    "attributes": {
+                        "color": "White"
                     },
+                    "assets": [
+                        {
+                            "printArea": "front",
+                            "url": image_url if image_url.startswith("http") else None,
+                            "md5Hash": None
+                        }
+                    ]
                 }
             ],
-            "reference": external_id,
             "metadata": {
                 "product_name": product_name,
                 "created_by": "discord_bot",
-            },
+            }
         }
+
+        # If using base64, add it to the asset
+        if not image_url.startswith("http"):
+            payload["items"][0]["assets"][0]["url"] = image_url
 
         async with self.session.post(endpoint, json=payload) as response:
             response.raise_for_status()
             data = await response.json()
 
-            order_id = data.get("order_id") or data.get("id")
-            product = data.get("products", [{}])[0] if data.get("products") else {}
+            order_id = data.get("order", {}).get("id") or data.get("id")
+            items = data.get("order", {}).get("items", [])
+            item = items[0] if items else {}
             
-            # Generate product URL
-            product_url = data.get("url") or f"https://teemill.com/order/{order_id}"
+            # Prodigi doesn't provide a direct product URL for preview
+            # Orders are for fulfillment, not e-commerce
+            product_url = f"https://dashboard.prodigi.com/orders/{order_id}"
 
-            return TeemillProduct(
+            return ProdigiProduct(
                 order_id=order_id,
-                product_id=product.get("product_id") or product.get("id"),
-                variant_id=product.get("variant_id"),
+                product_id=item.get("id"),
+                sku=item.get("sku"),
                 external_id=external_id,
                 name=product_name,
-                thumbnail_url=product.get("thumbnail_url") or image_url,
-                retail_price=product.get("price", 25.0),
-                currency=product.get("currency", "GBP"),
+                thumbnail_url=None,  # Prodigi doesn't provide thumbnails in API response
+                retail_price=item.get("cost", {}).get("amount", 15.0),
+                currency=item.get("cost", {}).get("currency", "USD"),
                 product_url=product_url,
+                status=data.get("order", {}).get("status", {}).get("stage"),
             )
 
     async def get_product_info(self, order_id: str) -> Dict:
         """
-        Get order/product information from Teemill.
+        Get order/product information from Prodigi.
 
         Args:
             order_id: The order ID
@@ -200,7 +214,7 @@ class TeemillClient:
         if not self.session:
             await self.initialize()
 
-        endpoint = f"{self.BASE_URL}/orders/{order_id}"
+        endpoint = f"{self.BASE_URL}/Orders/{order_id}"
 
         async with self.session.get(endpoint) as response:
             response.raise_for_status()
@@ -221,15 +235,15 @@ class TeemillClient:
         if not self.session:
             await self.initialize()
 
-        endpoint = f"{self.BASE_URL}/orders"
-        params = {"limit": limit, "offset": offset}
+        endpoint = f"{self.BASE_URL}/Orders"
+        params = {"top": limit, "skip": offset}
 
         try:
             async with self.session.get(endpoint, params=params) as response:
                 if response.status != 200:
                     error_body = await response.text()
                     logger.error(
-                        f"Teemill API error (status {response.status}): {error_body}"
+                        f"Prodigi API error (status {response.status}): {error_body}"
                     )
                     return {"products": [], "paging": {}}
                 
@@ -240,7 +254,7 @@ class TeemillClient:
                 return {
                     "products": orders,
                     "paging": {
-                        "total": data.get("total", len(orders)),
+                        "total": len(orders),  # Prodigi doesn't return total count
                         "limit": limit,
                         "offset": offset,
                     },
@@ -274,17 +288,15 @@ class TeemillClient:
             if not products:
                 break
 
-            # Filter products by reference containing user_id
+            # Filter products by merchantReference containing user_id
             user_products = [
                 p for p in products
-                if p.get("reference") and user_id in p.get("reference", "")
+                if p.get("merchantReference") and user_id in p.get("merchantReference", "")
             ]
             all_products.extend(user_products)
 
-            # Check if there are more products
-            paging = result.get("paging", {})
-            total = paging.get("total", 0)
-            if offset + limit >= total:
+            # Prodigi doesn't provide total count, so we fetch until no more results
+            if len(products) < limit:
                 break
 
             offset += limit
@@ -315,10 +327,8 @@ class TeemillClient:
 
             all_products.extend(products)
 
-            # Check if there are more products
-            paging = result.get("paging", {})
-            total = paging.get("total", 0)
-            if offset + limit >= total:
+            # Fetch until no more results
+            if len(products) < limit:
                 break
 
             offset += limit
@@ -335,10 +345,10 @@ class TeemillClient:
         """
         products = await self.get_all_designs()
 
-        # Extract user IDs from references
+        # Extract user IDs from merchantReference
         user_ids = set()
         for product in products:
-            reference = product.get("reference", "")
+            reference = product.get("merchantReference", "")
             if "discord_" in reference:
                 # Extract user_id from format: discord_userid_hash
                 parts = reference.split("_")

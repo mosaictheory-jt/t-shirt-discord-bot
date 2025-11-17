@@ -1,13 +1,13 @@
 # Discord T-Shirt Bot 👕🤖
 
-An intelligent Discord bot that automatically creates custom t-shirts based on user messages. Simply mention that you want a t-shirt with a specific phrase, and the bot will generate a design, create a product on Printful, and send you a purchase link!
+An intelligent Discord bot that automatically creates custom t-shirts based on user messages. Simply mention that you want a t-shirt with a specific phrase, and the bot will generate a design, create a product on Prodigi, and send you an order link!
 
 ## ✨ Features
 
 - 🎨 **AI-Powered Design Parsing**: Uses Google Gemini to understand natural language requests
 - 🖼️ **Automatic Design Generation**: Creates print-ready t-shirt designs with custom text
-- 🛍️ **Drop-Shipping Integration**: Automatically creates products on Printful for fulfillment
-- 📜 **Design History Tracking**: All designs stored in Printful store, viewable with `!mydesigns`
+- 🛍️ **Print-on-Demand Integration**: Automatically creates products on Prodigi for global fulfillment
+- 📜 **Design History Tracking**: All designs tracked in Prodigi dashboard, viewable with `!mydesigns`
 - 💬 **Natural Conversation**: Responds with fun, engaging phrases
 - 🚀 **Cloud-Ready**: Easily deployable to Google Cloud Platform
 - 📊 **Observable**: Optional Langsmith integration for LLM tracing and monitoring
@@ -39,7 +39,7 @@ python -m src.main
 Get your API keys:
 - **Discord**: [Developer Portal](https://discord.com/developers/applications)
 - **Google Gemini**: [AI Studio](https://makersuite.google.com/app/apikey)
-- **Printful**: [API Settings](https://www.printful.com/dashboard/store)
+- **Prodigi**: [Dashboard](https://dashboard.prodigi.com/)
 
 ## 📖 Documentation
 
@@ -61,11 +61,11 @@ Get your API keys:
    - Color preferences
    - Whether images are wanted
 4. **Design generator creates** a high-resolution PNG image (4500x5400px)
-5. **Printful API integration**:
+5. **Prodigi API integration**:
    - Uploads the design
-   - Creates a sync product
-   - Generates a product URL
-6. **Bot replies** with a fun phrase and the purchase link!
+   - Creates a print-on-demand order
+   - Generates an order URL
+6. **Bot replies** with a fun phrase and the order link!
 
 ## 🏗️ Project Structure
 
@@ -77,7 +77,7 @@ discord-tshirt-bot/
 │   ├── services/
 │   │   ├── llm_parser.py          # Gemini-based message parser
 │   │   ├── design_generator.py    # T-shirt design generator
-│   │   ├── printful_client.py     # Printful API client
+│   │   ├── prodigi_client.py      # Prodigi Print API client
 │   │   └── orchestrator.py        # Workflow coordinator
 │   ├── config.py                  # Configuration management
 │   └── main.py                    # Entry point
