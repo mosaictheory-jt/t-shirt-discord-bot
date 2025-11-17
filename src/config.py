@@ -40,8 +40,8 @@ class Settings(BaseSettings):
         description="Langsmith project name",
     )
 
-    # Teemill API
-    teemill_api_key: str = Field(..., description="Teemill API key")
+    # Prodigi Print API
+    prodigi_api_key: str = Field(..., description="Prodigi Print API key")
 
     # Bot Configuration
     bot_trigger_keywords: str = Field(

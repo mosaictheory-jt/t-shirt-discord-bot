@@ -8,7 +8,7 @@ This guide will walk you through setting up the Discord T-Shirt Bot.
 - UV package manager
 - Discord Bot Token
 - Google API Key (for Gemini)
-- Printful API Key
+- Prodigi API Key
 - (Optional) Langsmith API Key for tracing
 
 ## Installation
@@ -60,9 +60,8 @@ LANGCHAIN_API_KEY=your_langsmith_api_key_here
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_PROJECT=discord-tshirt-bot
 
-# Printful API
-PRINTFUL_API_KEY=your_printful_api_key_here
-PRINTFUL_STORE_ID=your_printful_store_id_here
+# Prodigi Print API
+PRODIGI_API_KEY=your_prodigi_api_key_here
 
 # Bot Configuration
 BOT_TRIGGER_KEYWORDS=tshirt,t-shirt,shirt,merch
@@ -95,16 +94,13 @@ BOT_LOG_LEVEL=INFO
 2. Click "Create API Key"
 3. Copy the generated API key
 
-### Printful API Key and Store ID
+### Prodigi API Key
 
-1. Go to [Printful](https://www.printful.com/)
+1. Go to [Prodigi Dashboard](https://dashboard.prodigi.com/)
 2. Sign up or log in
-3. Go to Settings > Stores
-4. Create a new store or select an existing one
-5. Note the Store ID (found in the store URL or store settings)
-6. Go to Settings > API
-7. Generate an API key
-8. Copy both the API key and Store ID
+3. Navigate to Settings or API section
+4. Generate an API key
+5. Copy the API key
 
 ### Langsmith API Key (Optional)
 
@@ -163,9 +159,9 @@ View all t-shirt designs you've created.
 User: !mydesigns
 Bot: Your Design History (2 designs):
      1. Code is Life - Custom Tee
-        🔗 View: https://www.printful.com/dashboard/store/products/12345
+        🔗 View: https://dashboard.prodigi.com/orders/ord_12345
      2. Hello World - Custom Tee
-        🔗 View: https://www.printful.com/dashboard/store/products/12346
+        🔗 View: https://dashboard.prodigi.com/orders/ord_12346
 ```
 
 ### Natural Language Requests
@@ -190,11 +186,11 @@ See **[Design Tracking Guide](DESIGN_TRACKING.md)** for more information about v
 - Check your Google Cloud quota
 - Review logs for specific error messages
 
-### Printful API errors
+### Prodigi API errors
 
-- Verify your `PRINTFUL_API_KEY` is valid
-- Make sure you have a Printful store set up
-- Check Printful API rate limits
+- Verify your `PRODIGI_API_KEY` is valid
+- Make sure you have a Prodigi account set up
+- Check Prodigi API rate limits
 
 ### Image generation issues
 

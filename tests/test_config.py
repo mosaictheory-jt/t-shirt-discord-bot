@@ -14,7 +14,7 @@ class TestSettings:
         settings = Settings(
             discord_bot_token="test_token",
             google_api_key="test_key",
-            teemill_api_key="test_key",
+            prodigi_api_key="test_key",
             bot_trigger_keywords="tshirt,shirt,merch",
         )
         
@@ -29,7 +29,7 @@ class TestSettings:
         settings = Settings(
             discord_bot_token="test_token",
             google_api_key="test_key",
-            teemill_api_key="test_key",
+            prodigi_api_key="test_key",
             discord_guild_ids="",
         )
         
@@ -41,7 +41,7 @@ class TestSettings:
         settings = Settings(
             discord_bot_token="test_token",
             google_api_key="test_key",
-            teemill_api_key="test_key",
+            prodigi_api_key="test_key",
             discord_guild_ids="123456789,987654321",
         )
         
