@@ -136,9 +136,9 @@ class TShirtBot(commands.Bot):
                 response = f"**Your Design History** ({len(designs)} design{'s' if len(designs) != 1 else ''}):\n\n"
                 
                 for i, design in enumerate(designs[:10], 1):  # Limit to 10 most recent
-                    name = design.get("metadata", {}).get("product_name", design.get("name", "Unnamed Design"))
-                    order_id = design.get("order_id") or design.get("id", "")
-                    product_url = design.get("url") or f"https://teemill.com/order/{order_id}"
+                    name = design.get("title", design.get("name", "Unnamed Design"))
+                    product_id = design.get("id", "")
+                    product_url = f"https://printify.com/app/products/{product_id}"
                     response += f"{i}. {name}\n"
                     response += f"   🔗 View: {product_url}\n\n"
 

@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.services.teemill_client import TeemillClient
+from src.services.printify_client import PrintifyClient
 from src.services.orchestrator import TShirtOrchestrator
 
 
@@ -12,8 +12,8 @@ class TestDesignTracking:
 
     @pytest.fixture
     def client(self):
-        """Create a Teemill client instance."""
-        return TeemillClient()
+        """Create a Printify client instance."""
+        return PrintifyClient()
 
     @pytest.fixture
     def orchestrator(self):
@@ -151,7 +151,7 @@ class TestDesignTracking:
         ]
 
         with patch.object(
-            orchestrator.teemill_client,
+            orchestrator.printify_client,
             'search_products_by_user',
             new_callable=AsyncMock,
             return_value=mock_designs,
@@ -172,7 +172,7 @@ class TestDesignTracking:
         }
 
         with patch.object(
-            orchestrator.teemill_client,
+            orchestrator.printify_client,
             'get_design_stats',
             new_callable=AsyncMock,
             return_value=mock_stats,
@@ -193,7 +193,7 @@ class TestDesignTracking:
         ]
 
         with patch.object(
-            orchestrator.teemill_client,
+            orchestrator.printify_client,
             'get_all_designs',
             new_callable=AsyncMock,
             return_value=mock_designs,

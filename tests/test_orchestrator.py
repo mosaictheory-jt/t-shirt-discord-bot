@@ -6,7 +6,7 @@ from pathlib import Path
 
 from src.services.orchestrator import TShirtOrchestrator, TShirtResult
 from src.services.llm_parser import TShirtRequest
-from src.services.teemill_client import TeemillProduct
+from src.services.printify_client import PrintifyProduct
 
 
 class TestTShirtOrchestrator:
@@ -30,30 +30,33 @@ class TestTShirtOrchestrator:
 
     @pytest.fixture
     def sample_product(self):
-        """Create a sample TeemillProduct."""
-        return TeemillProduct(
-            order_id="order_12345",
+        """Create a sample PrintifyProduct."""
+        return PrintifyProduct(
             product_id="prod_456",
-            variant_id="var_789",
+            title="Test Product",
+            description="Custom design",
+            blueprint_id=5,
+            print_provider_id=99,
+            variant_id=101,
             external_id="test_123",
-            name="Test Product",
             thumbnail_url="https://example.com/thumb.jpg",
             retail_price=29.99,
-            currency="GBP",
-            product_url="https://teemill.com/order/order_12345",
+            currency="USD",
+            product_url="https://printify.com/app/products/prod_456",
+            publish_status="unpublished",
         )
 
     @pytest.mark.asyncio
     async def test_initialize(self, orchestrator):
         """Test orchestrator initialization."""
-        with patch.object(orchestrator.teemill_client, 'initialize', new_callable=AsyncMock) as mock_init:
+        with patch.object(orchestrator.printify_client, 'initialize', new_callable=AsyncMock) as mock_init:
             await orchestrator.initialize()
             mock_init.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_cleanup(self, orchestrator):
         """Test orchestrator cleanup."""
-        with patch.object(orchestrator.teemill_client, 'cleanup', new_callable=AsyncMock) as mock_cleanup:
+        with patch.object(orchestrator.printify_client, 'cleanup', new_callable=AsyncMock) as mock_cleanup:
             await orchestrator.cleanup()
             mock_cleanup.assert_called_once()
 
@@ -79,9 +82,9 @@ class TestTShirtOrchestrator:
                 new_callable=AsyncMock,
                 return_value=(Path("/tmp/test.png"), b"fake_image_data"),
             ):
-                # Mock the Teemill client
+                # Mock the Printify client
                 with patch.object(
-                    orchestrator.teemill_client,
+                    orchestrator.printify_client,
                     'create_product',
                     new_callable=AsyncMock,
                     return_value=sample_product,
@@ -148,12 +151,12 @@ class TestTShirtOrchestrator:
         assert result.product_url is None
 
     @pytest.mark.asyncio
-    async def test_process_tshirt_request_teemill_failure(
+    async def test_process_tshirt_request_printify_failure(
         self,
         orchestrator,
         sample_request,
     ):
-        """Test request processing when Teemill API fails."""
+        """Test request processing when Printify API fails."""
         with patch.object(
             orchestrator.llm_parser,
             'parse_message',
@@ -167,10 +170,10 @@ class TestTShirtOrchestrator:
                 return_value=(Path("/tmp/test.png"), b"fake_data"),
             ):
                 with patch.object(
-                    orchestrator.teemill_client,
+                    orchestrator.printify_client,
                     'create_product',
                     new_callable=AsyncMock,
-                    side_effect=Exception("Teemill API error"),
+                    side_effect=Exception("Printify API error"),
                 ):
                     result = await orchestrator.process_tshirt_request(
                         message="test message",
@@ -179,7 +182,7 @@ class TestTShirtOrchestrator:
                     )
 
         assert result.success is False
-        assert "Teemill API error" in result.error_message
+        assert "Printify API error" in result.error_message
         assert result.product_url is None
 
     def test_response_phrases_not_empty(self, orchestrator):
