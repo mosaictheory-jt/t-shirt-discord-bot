@@ -1,0 +1,157 @@
+# Printify API Integration Rules
+
+## Overview
+This document defines rules and best practices for working with the Printify API in this project.
+Reference: https://developers.printify.com/
+
+## API Base URL
+- Production: `https://api.printify.com/v1`
+
+## Authentication
+- Use Bearer token authentication
+- Header: `Authorization: Bearer {PRINTIFY_API_KEY}`
+- Always use `Content-Type: application/json`
+- API keys are generated from Printify dashboard: Settings > API Access
+
+## Key Endpoints
+
+### Shops
+- `GET /shops.json` - List all shops
+- `GET /shops/{shop_id}.json` - Get specific shop info
+
+### Catalog (Blueprints)
+- `GET /catalog/blueprints.json` - List all available blueprints (product types)
+- `GET /catalog/blueprints/{blueprint_id}.json` - Get blueprint details
+- `GET /catalog/blueprints/{blueprint_id}/print_providers.json` - Get print providers
+- `GET /catalog/blueprints/{blueprint_id}/print_providers/{provider_id}/variants.json` - Get variants
+
+### Products
+- `GET /shops/{shop_id}/products.json` - List products
+- `GET /shops/{shop_id}/products/{product_id}.json` - Get product
+- `POST /shops/{shop_id}/products.json` - Create product
+- `PUT /shops/{shop_id}/products/{product_id}.json` - Update product
+- `DELETE /shops/{shop_id}/products/{product_id}.json` - Delete product
+- `POST /shops/{shop_id}/products/{product_id}/publish.json` - Publish product
+
+### Images
+- `POST /uploads/images.json` - Upload image (base64 or URL)
+
+## Common Blueprint IDs
+- `5` - Unisex Heavy Cotton Tee (Gildan 5000)
+- `6` - Unisex Jersey Short Sleeve Tee (Bella+Canvas 3001)
+- `9` - Women's Favorite Tee (Bella+Canvas 6004)
+- `145` - Classic Unisex Hoodie
+
+## Product Creation Workflow
+
+1. **Upload Image**
+   ```json
+   POST /uploads/images.json
+   {
+     "file_name": "design.png",
+     "url": "https://example.com/image.png"
+   }
+   // OR for base64:
+   {
+     "file_name": "design.png", 
+     "contents": "<base64_encoded_image>"
+   }
+   ```
+
+2. **Get Blueprint Variants**
+   ```
+   GET /catalog/blueprints/{blueprint_id}/print_providers/{provider_id}/variants.json
+   ```
+
+3. **Create Product**
+   ```json
+   POST /shops/{shop_id}/products.json
+   {
+     "title": "Product Title",
+     "description": "Product description",
+     "blueprint_id": 5,
+     "print_provider_id": 99,
+     "variants": [
+       {"id": 12345, "price": 2500, "is_enabled": true}
+     ],
+     "print_areas": [
+       {
+         "variant_ids": [12345],
+         "placeholders": [
+           {
+             "position": "front",
+             "images": [
+               {"id": "image_id", "x": 0.5, "y": 0.5, "scale": 1.0, "angle": 0}
+             ]
+           }
+         ]
+       }
+     ]
+   }
+   ```
+
+4. **Publish Product** (optional)
+   ```json
+   POST /shops/{shop_id}/products/{product_id}/publish.json
+   {
+     "title": true,
+     "description": true,
+     "images": true,
+     "variants": true,
+     "tags": true
+   }
+   ```
+
+## Error Handling
+
+### Common Status Codes
+- `200` - Success
+- `400` - Bad Request (validation error)
+- `401` - Unauthorized (invalid API key)
+- `403` - Forbidden (no access to resource)
+- `404` - Not Found
+- `429` - Rate Limited
+- `500` - Server Error
+
+### Rate Limiting
+- Printify has rate limits - implement exponential backoff
+- Check `X-RateLimit-*` headers in responses
+
+## Best Practices
+
+### Code Patterns
+1. Always use async/await with aiohttp for API calls
+2. Initialize session once and reuse for multiple requests
+3. Always clean up sessions when done
+4. Use proper error handling with specific exceptions
+
+### Image Requirements
+- Recommended: PNG format with transparent background
+- Minimum resolution: 300 DPI for print quality
+- Image dimensions vary by product - check blueprint specs
+
+### Price Handling
+- Prices are in cents (integer)
+- $25.00 = 2500
+- Always validate price ranges
+
+### External IDs
+- Use consistent format: `discord_{user_id}_{unique_hash}`
+- Enables tracking products by user
+
+## Environment Variables Required
+```
+PRINTIFY_API_KEY=your_api_key_here
+PRINTIFY_SHOP_ID=your_shop_id_here
+```
+
+## Testing
+- Use mocked responses for unit tests
+- Integration tests should use real API with test products
+- Always delete test products after integration tests
+- Mark integration tests with `@pytest.mark.integration`
+
+## Security
+- Never log full API keys
+- Store API keys in environment variables or secret managers
+- Validate all user inputs before sending to API

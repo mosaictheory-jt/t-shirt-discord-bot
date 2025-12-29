@@ -27,8 +27,8 @@ steps:
       - '--region=us-central1'
       - '--platform=managed'
       - '--allow-unauthenticated'
-      - '--set-env-vars=DISCORD_BOT_TOKEN=$$DISCORD_BOT_TOKEN,GOOGLE_API_KEY=$$GOOGLE_API_KEY,PRINTFUL_API_KEY=$$PRINTFUL_API_KEY,PRINTFUL_STORE_ID=$$PRINTFUL_STORE_ID'
-    secretEnv: ['DISCORD_BOT_TOKEN', 'GOOGLE_API_KEY', 'PRINTFUL_API_KEY', 'PRINTFUL_STORE_ID']
+      - '--set-env-vars=DISCORD_BOT_TOKEN=$$DISCORD_BOT_TOKEN,GOOGLE_API_KEY=$$GOOGLE_API_KEY,PRINTIFY_API_KEY=$$PRINTIFY_API_KEY,PRINTIFY_SHOP_ID=$$PRINTIFY_SHOP_ID'
+    secretEnv: ['DISCORD_BOT_TOKEN', 'GOOGLE_API_KEY', 'PRINTIFY_API_KEY', 'PRINTIFY_SHOP_ID']
 
 availableSecrets:
   secretManager:
@@ -36,10 +36,10 @@ availableSecrets:
       env: 'DISCORD_BOT_TOKEN'
     - versionName: projects/$PROJECT_ID/secrets/google-api-key/versions/latest
       env: 'GOOGLE_API_KEY'
-    - versionName: projects/$PROJECT_ID/secrets/printful-api-key/versions/latest
-      env: 'PRINTFUL_API_KEY'
-    - versionName: projects/$PROJECT_ID/secrets/printful-store-id/versions/latest
-      env: 'PRINTFUL_STORE_ID'
+    - versionName: projects/$PROJECT_ID/secrets/printify-api-key/versions/latest
+      env: 'PRINTIFY_API_KEY'
+    - versionName: projects/$PROJECT_ID/secrets/printify-shop-id/versions/latest
+      env: 'PRINTIFY_SHOP_ID'
 
 images:
   - 'gcr.io/$PROJECT_ID/discord-tshirt-bot:$COMMIT_SHA'

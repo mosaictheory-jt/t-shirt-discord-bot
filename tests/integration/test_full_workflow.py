@@ -33,7 +33,7 @@ class TestFullWorkflow:
             retail_price=29.99,
             currency="USD",
             product_url="https://printify.com/app/products/prod_123",
-            publish_status="unpublished",
+            is_visible=False,
         )
 
         with patch.object(
@@ -60,7 +60,7 @@ class TestFullWorkflow:
                 # Verify success
                 assert result.success is True
                 assert result.product_url is not None
-                assert "order_99999" in result.product_url
+                assert "prod_123" in result.product_url
                 assert result.response_phrase is not None
                 assert result.error_message is None
 
@@ -82,7 +82,7 @@ class TestFullWorkflow:
             retail_price=29.99,
             currency="USD",
             product_url="https://printify.com/app/products/prod_888",
-            publish_status="unpublished",
+            is_visible=False,
         )
 
         with patch.object(
@@ -124,7 +124,7 @@ class TestFullWorkflow:
             retail_price=29.99,
             currency="USD",
             product_url="https://printify.com/app/products/prod_777",
-            publish_status="unpublished",
+            is_visible=False,
         )
 
         with patch.object(
