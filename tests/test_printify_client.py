@@ -93,6 +93,7 @@ class TestPrintifyClient:
         
         # Create a proper async context manager mock
         mock_response = MagicMock()
+        mock_response.status = 200
         mock_response.raise_for_status = MagicMock()
         mock_response.json = AsyncMock(return_value={
             "id": "prod_123",
@@ -110,6 +111,7 @@ class TestPrintifyClient:
             }],
             "visible": False
         })
+        mock_response.text = AsyncMock(return_value="")
         
         # Create async context manager
         async_cm = AsyncMock()
@@ -152,10 +154,12 @@ class TestPrintifyClient:
         await client.initialize()
         
         # Helper to create async context manager mock
-        def create_response_mock(json_data):
+        def create_response_mock(json_data, status=200):
             response = MagicMock()
+            response.status = status
             response.raise_for_status = MagicMock()
             response.json = AsyncMock(return_value=json_data)
+            response.text = AsyncMock(return_value="")
             
             cm = AsyncMock()
             cm.__aenter__.return_value = response

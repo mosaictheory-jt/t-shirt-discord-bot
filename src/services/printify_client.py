@@ -289,46 +289,35 @@ class PrintifyClient:
         """
         endpoint = f"{self.BASE_URL}/shops/{self.shop_id}/products.json"
 
-        # Get the first variant (usually default size/color)
+        # Get the variants from the blueprint data
         variants = blueprint.get("variants", [])
         if not variants:
             raise ValueError("No variants available for this blueprint")
 
-        # Get print areas from the first variant
-        first_variant = variants[0]
-        print_areas = first_variant.get("options", {})
-        
-        # Find the front print area placeholder ID
-        front_placeholder = None
-        for key, value in print_areas.items():
-            if "front" in key.lower():
-                front_placeholder = value
-                break
-        
-        # If no front found, use the first available print area
-        if not front_placeholder and print_areas:
-            front_placeholder = list(print_areas.values())[0]
+        # Select first 3 variants (common sizes: S, M, L)
+        selected_variants = variants[:3]
+        variant_ids = [v["id"] for v in selected_variants]
 
-        # Create print areas configuration
-        print_areas_config = []
-        if front_placeholder:
-            print_areas_config.append({
-                "variant_ids": [v["id"] for v in variants[:3]],  # Apply to first 3 variants (common sizes)
+        # Create print areas configuration - place image on front
+        print_areas_config = [
+            {
+                "variant_ids": variant_ids,
                 "placeholders": [
                     {
                         "position": "front",
                         "images": [
                             {
                                 "id": image_id,
-                                "x": 0.5,  # Center position
-                                "y": 0.5,
+                                "x": 0.5,  # Center horizontally
+                                "y": 0.5,  # Center vertically
                                 "scale": 1.0,
                                 "angle": 0,
                             }
                         ]
                     }
                 ]
-            })
+            }
+        ]
 
         payload = {
             "title": product_name,
@@ -338,22 +327,21 @@ class PrintifyClient:
             "variants": [
                 {
                     "id": v["id"],
-                    "price": int(2500),  # $25.00 in cents
+                    "price": 2500,  # $25.00 in cents
                     "is_enabled": True,
                 }
-                for v in variants[:3]  # Enable first 3 variants (common sizes)
+                for v in selected_variants
             ],
             "print_areas": print_areas_config,
-            "external": {
-                "id": external_id,
-                "shipping_template_id": None,
-            }
         }
 
         async with self.session.post(endpoint, json=payload) as response:
-            response.raise_for_status()
+            if response.status != 200:
+                error_body = await response.text()
+                logger.error(f"Product creation failed ({response.status}): {error_body}")
+                response.raise_for_status()
+            
             data = await response.json()
-
             product_id = data.get("id")
             
             # Get the first variant for details
