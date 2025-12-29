@@ -25,7 +25,7 @@ class PrintifyProduct(BaseModel):
     retail_price: Optional[float] = None
     currency: str = "USD"
     product_url: Optional[str] = None
-    publish_status: Optional[str] = None
+    is_visible: bool = False  # Whether product is visible/published
 
 
 class PrintifyClient:
@@ -34,10 +34,17 @@ class PrintifyClient:
     BASE_URL = "https://api.printify.com/v1"
 
     # Common blueprint IDs (these are standard across Printify)
-    BLUEPRINT_UNISEX_TSHIRT = 5  # Unisex Heavy Cotton Tee
+    BLUEPRINT_UNISEX_TSHIRT = 5  # Unisex Heavy Cotton Tee (Gildan 5000)
+    BLUEPRINT_BELLA_CANVAS = 6  # Bella+Canvas 3001 Unisex Jersey
     
-    # Default print provider (you may want to make this configurable)
-    DEFAULT_PRINT_PROVIDER_ID = 99  # Generic provider, should be configured based on region
+    # Print provider IDs (varies by region and availability)
+    # These are common US-based providers
+    PRINT_PROVIDER_MONSTER_DIGITAL = 99
+    PRINT_PROVIDER_DUPLIUM = 28
+    PRINT_PROVIDER_AWKWARD_STYLES = 29
+    
+    # Default print provider - will auto-detect if not available
+    DEFAULT_PRINT_PROVIDER_ID = None  # Auto-detect first available
 
     def __init__(self):
         """Initialize the Printify client."""
@@ -55,6 +62,46 @@ class PrintifyClient:
                 }
             )
             logger.info("Initialized Printify API client")
+
+    async def verify_connection(self) -> bool:
+        """
+        Verify API connection and credentials.
+
+        Returns:
+            True if connection is valid, False otherwise
+        """
+        if not self.session:
+            await self.initialize()
+
+        try:
+            endpoint = f"{self.BASE_URL}/shops.json"
+            async with self.session.get(endpoint) as response:
+                if response.status == 200:
+                    shops = await response.json()
+                    logger.info(f"API connection verified. Found {len(shops)} shop(s)")
+                    return True
+                else:
+                    error = await response.text()
+                    logger.error(f"API verification failed (status {response.status}): {error}")
+                    return False
+        except Exception as e:
+            logger.error(f"API connection error: {e}")
+            return False
+
+    async def get_shops(self) -> List[Dict]:
+        """
+        Get all shops for the account.
+
+        Returns:
+            List of shop dictionaries
+        """
+        if not self.session:
+            await self.initialize()
+
+        endpoint = f"{self.BASE_URL}/shops.json"
+        async with self.session.get(endpoint) as response:
+            response.raise_for_status()
+            return await response.json()
 
     async def cleanup(self) -> None:
         """Clean up the HTTP session."""
@@ -79,7 +126,7 @@ class PrintifyClient:
             product_name: Name for the product
             user_id: User ID for tracking
             blueprint_id: Printify blueprint ID (default: unisex t-shirt)
-            print_provider_id: Print provider ID (default: configured provider)
+            print_provider_id: Print provider ID (default: auto-detect first available)
 
         Returns:
             PrintifyProduct with product details and URL
@@ -88,21 +135,26 @@ class PrintifyClient:
             await self.initialize()
 
         try:
+            # Auto-detect print provider if not specified
+            if print_provider_id is None:
+                providers = await self.get_print_providers(blueprint_id)
+                if not providers:
+                    raise ValueError(f"No print providers available for blueprint {blueprint_id}")
+                print_provider_id = providers[0]["id"]
+                logger.info(f"Auto-selected print provider: {providers[0].get('title')} (ID: {print_provider_id})")
+
             # Upload the design image first
             image_id = await self._upload_design_image(design_image_url, product_name)
 
             # Get the blueprint details to find available variants and print areas
-            blueprint = await self._get_blueprint(
-                blueprint_id, 
-                print_provider_id or self.DEFAULT_PRINT_PROVIDER_ID
-            )
+            blueprint = await self._get_blueprint(blueprint_id, print_provider_id)
 
             # Create the product with the design
             product = await self._create_product(
                 product_name=product_name,
                 description=f"Custom design created by user {user_id}",
                 blueprint_id=blueprint_id,
-                print_provider_id=print_provider_id or self.DEFAULT_PRINT_PROVIDER_ID,
+                print_provider_id=print_provider_id,
                 image_id=image_id,
                 external_id=f"discord_{user_id}_{hash(product_name)}",
                 blueprint=blueprint,
@@ -153,6 +205,27 @@ class PrintifyClient:
             logger.info(f"Uploaded design image: {image_id}")
             return image_id
 
+    async def get_print_providers(self, blueprint_id: int) -> List[Dict]:
+        """
+        Get available print providers for a blueprint.
+
+        Args:
+            blueprint_id: The blueprint ID
+
+        Returns:
+            List of print provider dictionaries
+        """
+        if not self.session:
+            await self.initialize()
+
+        endpoint = f"{self.BASE_URL}/catalog/blueprints/{blueprint_id}/print_providers.json"
+
+        async with self.session.get(endpoint) as response:
+            response.raise_for_status()
+            data = await response.json()
+            logger.info(f"Found {len(data)} print providers for blueprint {blueprint_id}")
+            return data
+
     async def _get_blueprint(self, blueprint_id: int, print_provider_id: int) -> Dict:
         """
         Get blueprint details including variants and print areas.
@@ -170,6 +243,24 @@ class PrintifyClient:
             response.raise_for_status()
             data = await response.json()
             return data
+
+    async def _get_print_areas(self, blueprint_id: int, print_provider_id: int) -> List[Dict]:
+        """
+        Get available print areas for a blueprint and provider.
+
+        Args:
+            blueprint_id: The blueprint ID
+            print_provider_id: The print provider ID
+
+        Returns:
+            List of print area dictionaries
+        """
+        endpoint = f"{self.BASE_URL}/catalog/blueprints/{blueprint_id}/print_providers/{print_provider_id}/printing.json"
+
+        async with self.session.get(endpoint) as response:
+            response.raise_for_status()
+            data = await response.json()
+            return data.get("placeholders", [])
 
     async def _create_product(
         self,
@@ -198,46 +289,35 @@ class PrintifyClient:
         """
         endpoint = f"{self.BASE_URL}/shops/{self.shop_id}/products.json"
 
-        # Get the first variant (usually default size/color)
+        # Get the variants from the blueprint data
         variants = blueprint.get("variants", [])
         if not variants:
             raise ValueError("No variants available for this blueprint")
 
-        # Get print areas from the first variant
-        first_variant = variants[0]
-        print_areas = first_variant.get("options", {})
-        
-        # Find the front print area placeholder ID
-        front_placeholder = None
-        for key, value in print_areas.items():
-            if "front" in key.lower():
-                front_placeholder = value
-                break
-        
-        # If no front found, use the first available print area
-        if not front_placeholder and print_areas:
-            front_placeholder = list(print_areas.values())[0]
+        # Select first 3 variants (common sizes: S, M, L)
+        selected_variants = variants[:3]
+        variant_ids = [v["id"] for v in selected_variants]
 
-        # Create print areas configuration
-        print_areas_config = []
-        if front_placeholder:
-            print_areas_config.append({
-                "variant_ids": [v["id"] for v in variants[:3]],  # Apply to first 3 variants (common sizes)
+        # Create print areas configuration - place image on front
+        print_areas_config = [
+            {
+                "variant_ids": variant_ids,
                 "placeholders": [
                     {
                         "position": "front",
                         "images": [
                             {
                                 "id": image_id,
-                                "x": 0.5,  # Center position
-                                "y": 0.5,
+                                "x": 0.5,  # Center horizontally
+                                "y": 0.5,  # Center vertically
                                 "scale": 1.0,
                                 "angle": 0,
                             }
                         ]
                     }
                 ]
-            })
+            }
+        ]
 
         payload = {
             "title": product_name,
@@ -247,22 +327,21 @@ class PrintifyClient:
             "variants": [
                 {
                     "id": v["id"],
-                    "price": int(2500),  # $25.00 in cents
+                    "price": 2500,  # $25.00 in cents
                     "is_enabled": True,
                 }
-                for v in variants[:3]  # Enable first 3 variants (common sizes)
+                for v in selected_variants
             ],
             "print_areas": print_areas_config,
-            "external": {
-                "id": external_id,
-                "shipping_template_id": None,
-            }
         }
 
         async with self.session.post(endpoint, json=payload) as response:
-            response.raise_for_status()
+            if response.status != 200:
+                error_body = await response.text()
+                logger.error(f"Product creation failed ({response.status}): {error_body}")
+                response.raise_for_status()
+            
             data = await response.json()
-
             product_id = data.get("id")
             
             # Get the first variant for details
@@ -285,7 +364,7 @@ class PrintifyClient:
                 retail_price=25.0,  # Default price
                 currency="USD",
                 product_url=f"https://printify.com/app/products/{product_id}",
-                publish_status=data.get("visible", False),
+                is_visible=data.get("visible", False),
             )
 
     async def publish_product(self, product_id: str) -> Dict:
@@ -335,6 +414,34 @@ class PrintifyClient:
             response.raise_for_status()
             data = await response.json()
             return data
+
+    async def delete_product(self, product_id: str) -> bool:
+        """
+        Delete a product from the shop.
+
+        Args:
+            product_id: The product ID to delete
+
+        Returns:
+            True if deleted successfully
+        """
+        if not self.session:
+            await self.initialize()
+
+        endpoint = f"{self.BASE_URL}/shops/{self.shop_id}/products/{product_id}.json"
+
+        try:
+            async with self.session.delete(endpoint) as response:
+                if response.status == 200:
+                    logger.info(f"Deleted product: {product_id}")
+                    return True
+                else:
+                    error = await response.text()
+                    logger.error(f"Failed to delete product {product_id}: {error}")
+                    return False
+        except Exception as e:
+            logger.error(f"Error deleting product {product_id}: {e}")
+            return False
 
     async def list_products(self, limit: int = 20, page: int = 1) -> dict:
         """

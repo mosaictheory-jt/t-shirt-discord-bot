@@ -43,7 +43,7 @@ class TestTShirtOrchestrator:
             retail_price=29.99,
             currency="USD",
             product_url="https://printify.com/app/products/prod_456",
-            publish_status="unpublished",
+            is_visible=False,
         )
 
     @pytest.mark.asyncio
@@ -97,7 +97,7 @@ class TestTShirtOrchestrator:
 
         assert result.success is True
         assert result.product_url is not None
-        assert "order_12345" in result.product_url
+        assert "prod_456" in result.product_url
         assert result.response_phrase in TShirtOrchestrator.RESPONSE_PHRASES
         assert result.phrase == "Hello World"
         assert result.error_message is None

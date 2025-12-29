@@ -91,7 +91,9 @@ class TestPrintifyClient:
         """Test product creation method."""
         await client.initialize()
         
-        mock_response = AsyncMock()
+        # Create a proper async context manager mock
+        mock_response = MagicMock()
+        mock_response.status = 200
         mock_response.raise_for_status = MagicMock()
         mock_response.json = AsyncMock(return_value={
             "id": "prod_123",
@@ -109,20 +111,25 @@ class TestPrintifyClient:
             }],
             "visible": False
         })
-        mock_response.__aenter__.return_value = mock_response
-        mock_response.__aexit__.return_value = AsyncMock()
+        mock_response.text = AsyncMock(return_value="")
+        
+        # Create async context manager
+        async_cm = AsyncMock()
+        async_cm.__aenter__.return_value = mock_response
+        async_cm.__aexit__.return_value = None
         
         blueprint = {
             "variants": [
                 {
                     "id": 101,
                     "title": "S / Black",
-                    "options": {"front": "front_placeholder"}
+                    "options": {"front": "front_placeholder"},
+                    "placeholders": [{"position": "front"}]
                 }
             ]
         }
         
-        with patch.object(client.session, 'post', return_value=mock_response):
+        with patch.object(client.session, 'post', return_value=async_cm):
             product = await client._create_product(
                 product_name="Test Product",
                 description="Test description",
@@ -146,35 +153,44 @@ class TestPrintifyClient:
         """Test complete product creation workflow."""
         await client.initialize()
         
+        # Helper to create async context manager mock
+        def create_response_mock(json_data, status=200):
+            response = MagicMock()
+            response.status = status
+            response.raise_for_status = MagicMock()
+            response.json = AsyncMock(return_value=json_data)
+            response.text = AsyncMock(return_value="")
+            
+            cm = AsyncMock()
+            cm.__aenter__.return_value = response
+            cm.__aexit__.return_value = None
+            return cm
+        
+        # Mock providers response
+        providers_cm = create_response_mock([
+            {"id": 99, "title": "Test Provider"}
+        ])
+        
         # Mock upload response
-        upload_response = AsyncMock()
-        upload_response.raise_for_status = MagicMock()
-        upload_response.json = AsyncMock(return_value={
+        upload_cm = create_response_mock({
             "id": "img_12345"
         })
-        upload_response.__aenter__.return_value = upload_response
-        upload_response.__aexit__.return_value = AsyncMock()
         
         # Mock blueprint response
-        blueprint_response = AsyncMock()
-        blueprint_response.raise_for_status = MagicMock()
-        blueprint_response.json = AsyncMock(return_value={
+        blueprint_cm = create_response_mock({
             "id": 5,
             "variants": [
                 {
                     "id": 101,
                     "title": "S / Black",
-                    "options": {"front": "front_placeholder"}
+                    "options": {"front": "front_placeholder"},
+                    "placeholders": [{"position": "front"}]
                 }
             ]
         })
-        blueprint_response.__aenter__.return_value = blueprint_response
-        blueprint_response.__aexit__.return_value = AsyncMock()
         
         # Mock product creation response
-        product_response = AsyncMock()
-        product_response.raise_for_status = MagicMock()
-        product_response.json = AsyncMock(return_value={
+        product_cm = create_response_mock({
             "id": "prod_456",
             "title": "Test T-Shirt - Custom Tee",
             "description": "Custom design created by user user_123",
@@ -189,11 +205,9 @@ class TestPrintifyClient:
             }],
             "visible": False
         })
-        product_response.__aenter__.return_value = product_response
-        product_response.__aexit__.return_value = AsyncMock()
         
-        with patch.object(client.session, 'post', side_effect=[upload_response, product_response]):
-            with patch.object(client.session, 'get', return_value=blueprint_response):
+        with patch.object(client.session, 'post', side_effect=[upload_cm, product_cm]):
+            with patch.object(client.session, 'get', side_effect=[providers_cm, blueprint_cm]):
                 product = await client.create_product(
                     design_image_url="data:image/png;base64,abc123",
                     product_name="Test T-Shirt",
@@ -238,6 +252,7 @@ class TestPrintifyClient:
         await client.initialize()
         
         mock_response = AsyncMock()
+        mock_response.status = 200
         mock_response.raise_for_status = MagicMock()
         mock_response.json = AsyncMock(return_value=[
             {"id": "prod_1", "title": "Product 1"},

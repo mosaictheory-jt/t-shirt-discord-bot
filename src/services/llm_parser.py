@@ -110,26 +110,47 @@ extract "Coffee is life" as the phrase.
         """
         logger.warning("Using fallback parser")
         
-        # Simple extraction - just use the message as the phrase
-        # Remove common trigger words
-        phrase = message
-        for keyword in settings.trigger_keywords_list:
-            phrase = phrase.replace(keyword, "").strip()
+        import re
         
-        # Clean up common phrases
-        for prefix in ["that says", "with", "saying", "i want a", "make me a"]:
-            if prefix in phrase.lower():
-                parts = phrase.lower().split(prefix)
-                if len(parts) > 1:
-                    phrase = parts[1].strip()
+        # Try to extract quoted text first (most reliable)
+        quoted_match = re.search(r"['\"]([^'\"]+)['\"]", message)
+        if quoted_match:
+            phrase = quoted_match.group(1)
+        else:
+            # Simple extraction - just use the message as the phrase
+            phrase = message
+            
+            # Remove common trigger words
+            for keyword in settings.trigger_keywords_list:
+                phrase = phrase.replace(keyword, "").strip()
+            
+            # Clean up common phrases
+            for prefix in ["that says", "with text", "saying", "i want a", "make me a", "cool"]:
+                if prefix in phrase.lower():
+                    parts = phrase.lower().split(prefix)
+                    if len(parts) > 1:
+                        phrase = parts[1].strip()
         
-        # Remove quotes if present
-        phrase = phrase.strip('"\'')
+        # Extract color preference
+        color_preference = None
+        color_keywords = ["red", "blue", "green", "yellow", "purple", "orange", "pink", "white", "black"]
+        for color in color_keywords:
+            if f"in {color}" in message.lower() or f"{color} color" in message.lower():
+                color_preference = color
+                break
+        
+        # Clean up the phrase - remove trailing color references
+        phrase_clean = phrase
+        for color in color_keywords:
+            phrase_clean = re.sub(rf"\s+in\s+{color}\s*$", "", phrase_clean, flags=re.IGNORECASE)
+        
+        # Final cleanup
+        phrase_clean = phrase_clean.strip('"\'').strip()
         
         return TShirtRequest(
-            phrase=phrase or "Custom T-Shirt",
+            phrase=phrase_clean or "Custom T-Shirt",
             style="modern",
             wants_image=False,
             image_description=None,
-            color_preference=None,
+            color_preference=color_preference,
         )
